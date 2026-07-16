@@ -1,0 +1,27 @@
+# Data files (large)
+data/raw/subset*.zip
+data/raw/subset*/
+data/processed/patches/
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.ipynb_checkpoints/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+
+# Virtual environments
+venv/
+env/
+
+# Logs and runs
+runs/
+*.log
+
+# OS
+.DS_Store
+Thumbs.db
