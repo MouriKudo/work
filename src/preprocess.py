@@ -126,7 +126,9 @@ def match_candidate_to_annotation(candidate_coord, annotations_df, seriesuid, to
 # ==================== Subset 映射 ====================
 
 def build_subset_map(raw_dir):
-    """遍历 data/raw/ 中所有 subset 目录，建立 {seriesuid: subset_id} 映射"""
+    """遍历 data/raw/ 中所有 subset 目录，建立 {seriesuid: subset_id} 映射
+    支持嵌套解压结构: subset0/subset0/*.mhd 和 扁平结构: subset0/*.mhd
+    """
     subset_map = {}
     for subset_dir in sorted(raw_dir.glob("subset*")):
         if not subset_dir.is_dir():
@@ -135,7 +137,13 @@ def build_subset_map(raw_dir):
             subset_id = int(re.search(r"(\d+)", subset_dir.name).group(1))
         except (AttributeError, ValueError):
             continue
-        for mhd_path in sorted(subset_dir.glob("*.mhd")):
+
+        # 查找 .mhd 文件：支持嵌套 (subset0/subset0/*.mhd) 和扁平 (subset0/*.mhd)
+        mhd_inner = sorted(subset_dir.glob("*.mhd"))
+        mhd_nested = sorted(subset_dir.glob("*/*.mhd"))
+        mhd_files = mhd_inner if mhd_inner else mhd_nested
+
+        for mhd_path in mhd_files:
             seriesuid = mhd_path.stem
             subset_map[seriesuid] = subset_id
     print(f"  Built subset map: {len(subset_map)} seriesuids from {len(list(raw_dir.glob('subset*')))} subset dirs")
@@ -222,7 +230,10 @@ def run_preprocessing(
         subset_name = subset_dir.name
         print(f"\n  Processing {subset_name}...")
 
+        # 支持嵌套目录 (subset0/subset0/*.mhd) 和扁平目录 (subset0/*.mhd)
         mhd_files = sorted(subset_dir.glob("*.mhd"))
+        if not mhd_files:
+            mhd_files = sorted(subset_dir.glob("*/*.mhd"))
         if not mhd_files:
             print(f"    No .mhd files in {subset_name}, skipping")
             continue

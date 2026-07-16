@@ -184,6 +184,8 @@ def build_subset_map(subset_dirs):
         except (AttributeError, ValueError):
             continue
         mhd_files = glob(str(sd / "*.mhd"))
+        if not mhd_files:
+            mhd_files = glob(str(sd / "*" / "*.mhd"))
         for mf in mhd_files:
             seriesuid = os.path.splitext(os.path.basename(mf))[0]
             subset_map[seriesuid] = subset_id
@@ -214,7 +216,10 @@ def extract_patches_from_subset(
     -------
     metadata_rows : list of dicts for metadata.csv
     """
+    # 支持嵌套目录 (subset0/subset0/*.mhd) 和扁平目录 (subset0/*.mhd)
     mhd_files = sorted(glob(str(ct_dir / "*.mhd")))
+    if not mhd_files:
+        mhd_files = sorted(glob(str(ct_dir / "*" / "*.mhd")))
     if not mhd_files:
         print(f"  No .mhd files found in {ct_dir}")
         return []

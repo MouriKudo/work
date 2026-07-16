@@ -1,7 +1,8 @@
-# Data files (large)
+# Data files (large) — ignore raw CT scans, keep small CSVs
 data/raw/subset*.zip
 data/raw/subset*/
-data/processed/patches/
+data/raw/candidates.csv
+data/processed/patches/*.npy
 
 # Python
 __pycache__/
@@ -17,6 +18,7 @@ __pycache__/
 # Virtual environments
 venv/
 env/
+.venv/
 
 # Logs and runs
 runs/
@@ -25,3 +27,16 @@ runs/
 # OS
 .DS_Store
 Thumbs.db
+
+# Temporary scripts
+d.py
+d2.py
+debug.py
+t.py
+p.py
+err.txt
+out.txt
+tmp_output.txt
+plot_log.txt
+run_plots.bat
+fix_meta.py

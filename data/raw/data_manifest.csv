@@ -1,0 +1,4 @@
+filename,size_bytes,size_mb,md5,expected_size_match
+annotations.csv,136986,0.13,f4404df491aee6445a4485061bfdffdd,MISMATCH
+candidates.csv,55427881,52.86,2493fb3a766f71a7e1c6591d45191215,MISMATCH
+sampleSubmission.csv,740,0.0,76df445fe9f4899fd1fff417d234ca14,MISMATCH
