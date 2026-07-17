@@ -20,8 +20,9 @@ venv/
 env/
 .venv/
 
-# Logs and runs
-runs/
+# Logs and runs — track key results, ignore large model weights
+runs/**/*.pth
+runs/**/predictions/
 *.log
 
 # OS
