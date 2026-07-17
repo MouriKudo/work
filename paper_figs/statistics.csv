@@ -1,26 +1,26 @@
 Category,Metric,Value
-Overall,Total Samples,444.0
-Overall,Unique CTs,88.0
-Overall,Positive,111.0
-Overall,Negative,333.0
+Overall,Total Samples,4512.0
+Overall,Unique CTs,863.0
+Overall,Positive,1128.0
+Overall,Negative,3384.0
 Overall,Pos/Neg Ratio,0.333
-HU Negative,mean,-577.4
-HU Negative,std,196.1
-HU Negative,min,-896.7
-HU Negative,max,16.9
-HU Positive,mean,-571.0
-HU Positive,std,186.3
-HU Positive,min,-906.4
-HU Positive,max,-88.8
-Split train,Total,444.0
-Split train,Positive,111.0
-Split train,Negative,333.0
-Split train,Unique CTs,88.0
-Split val,Total,0.0
-Split val,Positive,0.0
-Split val,Negative,0.0
-Split val,Unique CTs,0.0
-Split test,Total,0.0
-Split test,Positive,0.0
-Split test,Negative,0.0
-Split test,Unique CTs,0.0
+HU Negative,mean,-601.3
+HU Negative,std,190.4
+HU Negative,min,-1194.1
+HU Negative,max,-10.0
+HU Positive,mean,-579.4
+HU Positive,std,168.3
+HU Positive,min,-952.6
+HU Positive,max,-77.7
+Split train,Total,3553.0
+Split train,Positive,916.0
+Split train,Negative,2637.0
+Split train,Unique CTs,689.0
+Split val,Total,462.0
+Split val,Positive,114.0
+Split val,Negative,348.0
+Split val,Unique CTs,87.0
+Split test,Total,497.0
+Split test,Positive,98.0
+Split test,Negative,399.0
+Split test,Unique CTs,87.0
