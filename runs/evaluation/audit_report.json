@@ -1,0 +1,41 @@
+{
+  "data_leakage": {
+    "train_val_overlap": 0,
+    "train_test_overlap": 0,
+    "val_test_overlap": 0,
+    "status": "PASS"
+  },
+  "label_check": {
+    "pos_samples_checked": 298,
+    "mean_dist_to_annotation_mm": 1.3003270735892611,
+    "within_5mm_pct": 100.0
+  },
+  "hu_check": {
+    "pos_mean": -579.4432535460993,
+    "neg_mean": -601.2994385342789,
+    "hu_outlier_count": 0
+  },
+  "split_distribution": [
+    {
+      "split": "train",
+      "samples": 3553,
+      "unique_CTs": 689,
+      "pos": 916,
+      "neg": 2637
+    },
+    {
+      "split": "val",
+      "samples": 462,
+      "unique_CTs": 87,
+      "pos": 114,
+      "neg": 348
+    },
+    {
+      "split": "test",
+      "samples": 497,
+      "unique_CTs": 87,
+      "pos": 98,
+      "neg": 399
+    }
+  ]
+}
