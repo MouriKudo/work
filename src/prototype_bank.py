@@ -1,218 +1,297 @@
-"""
-Task 4: Prototype Bank Construction
-====================================
-1. 提取训练集特征 (ResNet18 倒数第二层 512-dim)
-2. 按正负类分别 K=3 余弦聚类
-3. 每聚类取 N=20 个最靠近中心的样本作为原型
-4. 保存 prototype_bank.pkl + 原型样本网格图
+"""Build a class-wise prototype bank from a trained ResNet18 checkpoint."""
 
-Usage: python src/prototype_bank.py
-"""
-import sys, pickle, traceback
+from __future__ import annotations
+
+import argparse
+import hashlib
+import json
+import pickle
+import sys
 from pathlib import Path
+from typing import Dict, Tuple
+
 import numpy as np
 import pandas as pd
 import torch
-import torch.nn as nn
-import cv2
+import torch.nn.functional as F
+from PIL import Image, ImageDraw, ImageFont
 from torch.utils.data import DataLoader
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(PROJECT_ROOT / "src"))
+
 from luna16_dataset import LUNA16Dataset
-
-# --- Config ---
-CHECKPOINT = PROJECT_ROOT / "runs" / "resnet18_aug-strong_sd42_strong_20260719_102942" / "best_model.pth"
-OUT_DIR = PROJECT_ROOT / "runs" / "prototype_bank"
-OUT_DIR.mkdir(parents=True, exist_ok=True)
-
-K_CLUSTERS = 3       # 每类 k 个聚类
-N_PROTOTYPES = 20     # 每聚类 N 个原型
-DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-
-print("=" * 60)
-print("TASK 4: PROTOTYPE BANK CONSTRUCTION")
-print(f"  K={K_CLUSTERS}  N={N_PROTOTYPES}")
-print(f"  Checkpoint: {CHECKPOINT}")
-print("=" * 60)
+from train import ResNet18Binary
 
 
-def load_model(checkpoint_path):
-    from train import ResNet18Binary
-    model = ResNet18Binary(pretrained=False)
-    ckpt = torch.load(str(checkpoint_path), map_location=DEVICE, weights_only=False)
-    model.load_state_dict(ckpt["model_state_dict"])
-    model.to(DEVICE)
-    model.eval()
-    print(f"  Loaded model from epoch {ckpt.get('epoch', '?')}")
-    return model, model.backbone.avgpool  # hook here? We'll just use forward hook
+DEFAULT_CHECKPOINT = (
+    PROJECT_ROOT
+    / "runs"
+    / "resnet18_aug-strong_sd42_strong_20260719_102942"
+    / "best_model.pth"
+)
 
 
-# ================================================================
-# Extract 512-dim features
-# ================================================================
-print("\n[1/4] Extracting features from train set...")
+def sha256_file(path: Path) -> str:
+    digest = hashlib.sha256()
+    with path.open("rb") as handle:
+        for chunk in iter(lambda: handle.read(1024 * 1024), b""):
+            digest.update(chunk)
+    return digest.hexdigest()
 
-model, _ = load_model(CHECKPOINT)
 
-# Hook the penultimate layer (global avg pooling output => 512)
-features_list = []
-labels_list = []
-uids_list = []
-patch_names = []
+def load_feature_model(checkpoint_path: Path, device: torch.device):
+    checkpoint = torch.load(
+        str(checkpoint_path), map_location=device, weights_only=False
+    )
+    dropout = float(checkpoint.get("args", {}).get("dropout", 0.3))
+    model = ResNet18Binary(pretrained=False, dropout=dropout)
+    model.load_state_dict(checkpoint["model_state_dict"])
+    model.to(device).eval()
+    return model, int(checkpoint.get("epoch", -1))
 
-def hook_fn(module, input, output):
-    # output shape: (B, 512, 1, 1)
-    features_list.append(output.squeeze(-1).squeeze(-1).detach().cpu())
 
-model.backbone.avgpool.register_forward_hook(hook_fn)
+@torch.no_grad()
+def extract_features(
+    model: ResNet18Binary,
+    dataset: LUNA16Dataset,
+    device: torch.device,
+    batch_size: int,
+    num_workers: int,
+) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+    loader = DataLoader(
+        dataset,
+        batch_size=batch_size,
+        shuffle=False,
+        num_workers=num_workers,
+        pin_memory=device.type == "cuda",
+    )
+    features = []
+    labels = []
+    seriesuids = []
+    for x, y, uids in loader:
+        features.append(model.forward_features(x.to(device, non_blocking=True)).cpu())
+        labels.append(y)
+        seriesuids.extend(uids)
+    return (
+        torch.cat(features).numpy(),
+        torch.cat(labels).numpy(),
+        np.asarray(seriesuids),
+        dataset.df["patch_file"].astype(str).to_numpy(),
+    )
 
-ds = LUNA16Dataset(split="train")
-loader = DataLoader(ds, batch_size=256, shuffle=False, num_workers=0, pin_memory=True)
 
-with torch.no_grad():
-    for x, y, uid in loader:
-        x = x.to(DEVICE)
-        model(x)  # forward triggers hook
-        labels_list.append(y)
-        uids_list.extend(uid)
+def cosine_kmeans(
+    features: np.ndarray,
+    n_clusters: int,
+    max_iter: int = 100,
+    seed: int = 42,
+) -> Tuple[np.ndarray, np.ndarray, int]:
+    """Spherical K-means using cosine similarity."""
+    if len(features) < n_clusters:
+        raise ValueError("n_clusters cannot exceed the number of class samples")
+    rng = np.random.default_rng(seed)
+    normalized = features / (np.linalg.norm(features, axis=1, keepdims=True) + 1e-8)
+    centers = normalized[rng.choice(len(normalized), n_clusters, replace=False)].copy()
+    assignments = np.full(len(normalized), -1, dtype=np.int64)
+    for iteration in range(1, max_iter + 1):
+        # Avoid NumPy's BLAS-backed ``@`` here.  The current Windows runtime
+        # can raise a native DLL exception for even tiny matrix products.
+        similarities = np.sum(
+            normalized[:, None, :] * centers[None, :, :], axis=2
+        )
+        new_assignments = np.argmax(similarities, axis=1)
+        if np.array_equal(assignments, new_assignments):
+            return assignments, centers, iteration
+        assignments = new_assignments
+        for cluster_id in range(n_clusters):
+            members = normalized[assignments == cluster_id]
+            if len(members) == 0:
+                centers[cluster_id] = normalized[rng.integers(len(normalized))]
+            else:
+                center = members.mean(axis=0)
+                centers[cluster_id] = center / (np.linalg.norm(center) + 1e-8)
+    return assignments, centers, max_iter
 
-all_features = torch.cat(features_list, dim=0).numpy()  # (3553, 512)
-all_labels = torch.cat(labels_list, dim=0).numpy()       # (3553,)
-all_names = uids_list
 
-print(f"  Extracted: {all_features.shape} features")
-print(f"  Pos: {(all_labels==1).sum()}, Neg: {(all_labels==0).sum()}")
+def construct_bank(
+    features: np.ndarray,
+    labels: np.ndarray,
+    seriesuids: np.ndarray,
+    patch_files: np.ndarray,
+    checkpoint: Path,
+    checkpoint_epoch: int,
+    k_clusters: int,
+    n_prototypes: int,
+    seed: int,
+) -> dict:
+    prototypes: Dict[str, list] = {}
+    cluster_centers: Dict[str, np.ndarray] = {}
+    cluster_stats = []
+    for class_name, class_id in (("negative", 0), ("positive", 1)):
+        global_indices = np.flatnonzero(labels == class_id)
+        class_features = features[global_indices]
+        assignments, centers, iterations = cosine_kmeans(
+            class_features, k_clusters, seed=seed + class_id
+        )
+        normalized_features = class_features / (
+            np.linalg.norm(class_features, axis=1, keepdims=True) + 1e-8
+        )
+        class_prototypes = []
+        for cluster_id in range(k_clusters):
+            member_mask = assignments == cluster_id
+            member_global_indices = global_indices[member_mask]
+            similarities = np.sum(
+                normalized_features[member_mask] * centers[cluster_id], axis=1
+            )
+            count = min(n_prototypes, len(similarities))
+            selected_local = np.argsort(similarities)[-count:][::-1]
+            selected_global = member_global_indices[selected_local]
+            selected_similarities = similarities[selected_local]
+            class_prototypes.append(
+                {
+                    "cluster_id": cluster_id,
+                    "indices": selected_global.tolist(),
+                    "similarities": selected_similarities.astype(float).tolist(),
+                }
+            )
+            cluster_stats.append(
+                {
+                    "class": class_name,
+                    "class_id": class_id,
+                    "cluster_id": cluster_id,
+                    "size": int(member_mask.sum()),
+                    "prototypes": int(count),
+                    "iterations": int(iterations),
+                    "max_similarity": float(selected_similarities[0]),
+                    "min_selected_similarity": float(selected_similarities[-1]),
+                }
+            )
+        prototypes[class_name] = class_prototypes
+        cluster_centers[class_name] = centers.astype(np.float32)
 
-# ================================================================
-# K=3 Cosine Similarity Clustering
-# ================================================================
-print(f"\n[2/4] Cosine-similarity clustering (K={K_CLUSTERS})...")
+    return {
+        "format_version": 2,
+        "checkpoint": str(checkpoint.resolve()),
+        "checkpoint_sha256": sha256_file(checkpoint),
+        "checkpoint_epoch": checkpoint_epoch,
+        "seed": seed,
+        "k_clusters": k_clusters,
+        "n_prototypes": n_prototypes,
+        "feature_dim": int(features.shape[1]),
+        "prototypes": prototypes,
+        "cluster_centers": cluster_centers,
+        "features": features.astype(np.float32),
+        "labels": labels.astype(np.int64),
+        "seriesuids": seriesuids.tolist(),
+        "patch_files": patch_files.tolist(),
+        "cluster_stats": cluster_stats,
+    }
 
-def cosine_kmeans(X, n_clusters, max_iter=100, seed=42):
-    """K-means with cosine similarity (argmin of 1 - cosine_sim)"""
-    np.random.seed(seed)
-    idx = np.random.choice(len(X), n_clusters, replace=False)
-    centers = X[idx].copy()
-    # L2 normalize
-    X_norm = X / (np.linalg.norm(X, axis=1, keepdims=True) + 1e-8)
-    for _ in range(max_iter):
-        centers_norm = centers / (np.linalg.norm(centers, axis=1, keepdims=True) + 1e-8)
-        sim = X_norm @ centers_norm.T  # cosine similarity
-        labels = np.argmax(sim, axis=1)
-        old_centers = centers.copy()
-        for c in range(n_clusters):
-            cluster_X = X[labels == c]
-            if len(cluster_X) > 0:
-                centers[c] = cluster_X.mean(axis=0)
-        if np.allclose(old_centers, centers):
-            break
-    return labels, centers
 
-# Cluster positive and negative separately
-prototypes = {}
-all_sim_results = []
+def save_prototype_grid(
+    bank: dict,
+    patches_dir: Path,
+    output_path: Path,
+) -> None:
+    cell_size = 64
+    margin = 4
+    header = 22
+    n_columns = bank["n_prototypes"]
+    n_rows = bank["k_clusters"] * 2
+    width = margin + n_columns * (cell_size + margin)
+    height = header + margin + n_rows * (cell_size + margin)
+    canvas = Image.new("L", (width, height), color=255)
+    draw = ImageDraw.Draw(canvas)
+    font = ImageFont.load_default()
+    draw.text((margin, 5), "negative clusters followed by positive clusters", fill=0, font=font)
 
-for class_id, class_name in [(1, "positive"), (0, "negative")]:
-    mask = all_labels == class_id
-    X_class = all_features[mask]
-    n_samples = len(X_class)
-    print(f"\n  Class '{class_name}': {n_samples} samples")
+    row_index = 0
+    for class_name in ("negative", "positive"):
+        for cluster in bank["prototypes"][class_name]:
+            for column, feature_index in enumerate(cluster["indices"]):
+                patch_file = bank["patch_files"][feature_index]
+                patch = np.load(patches_dir / patch_file)
+                center_slice = np.clip(patch[1], 0.0, 1.0)
+                tile = Image.fromarray((center_slice * 255).astype(np.uint8), mode="L")
+                x = margin + column * (cell_size + margin)
+                y = header + margin + row_index * (cell_size + margin)
+                canvas.paste(tile, (x, y))
+            row_index += 1
+    canvas.save(output_path)
 
-    labels_c, centers = cosine_kmeans(X_class, n_clusters=K_CLUSTERS)
 
-    # L2 normalize centers and features for cosine sim
-    centers_norm = centers / (np.linalg.norm(centers, axis=1, keepdims=True) + 1e-8)
-    X_norm = X_class / (np.linalg.norm(X_class, axis=1, keepdims=True) + 1e-8)
-    sim = X_norm @ centers_norm.T
+def parse_args() -> argparse.Namespace:
+    parser = argparse.ArgumentParser(description="Build a LUNA16 prototype bank")
+    parser.add_argument("--checkpoint", type=Path, default=DEFAULT_CHECKPOINT)
+    parser.add_argument("--output_dir", type=Path, default=PROJECT_ROOT / "runs/prototype_bank")
+    parser.add_argument("--metadata", type=Path, default=PROJECT_ROOT / "data/processed/metadata.csv")
+    parser.add_argument("--patches", type=Path, default=PROJECT_ROOT / "data/processed/patches")
+    parser.add_argument("--k", type=int, default=3)
+    parser.add_argument("--n", type=int, default=20)
+    parser.add_argument("--seed", type=int, default=42)
+    parser.add_argument("--batch_size", type=int, default=256)
+    parser.add_argument("--num_workers", type=int, default=0)
+    return parser.parse_args()
 
-    cluster_protos = []
-    for c in range(K_CLUSTERS):
-        c_mask = labels_c == c
-        c_indices = np.where(mask)[0][c_mask]
-        c_sim = sim[c_mask, c]
-        n_top = min(N_PROTOTYPES, len(c_sim))
-        top_k = np.argsort(c_sim)[-n_top:][::-1]
-        top_indices = c_indices[top_k]
-        top_sims = c_sim[top_k]
-        cluster_protos.append({
-            "cluster_id": c,
-            "indices": top_indices.tolist(),
-            "similarities": top_sims.tolist(),
-        })
-        all_sim_results.append({
-            "class": class_name,
-            "cluster_id": c,
-            "size": int(c_mask.sum()),
-            "prototypes": n_top,
-        })
-        print(f"    Cluster {c}: {c_mask.sum()} samples, {n_top} prototypes (top sim={top_sims[0]:.4f})")
-    prototypes[class_name] = cluster_protos
 
-# ================================================================
-# Pickle & save
-# ================================================================
-print(f"\n[3/4] Saving prototype bank...")
+def main() -> None:
+    args = parse_args()
+    if args.k <= 0 or args.n <= 0:
+        raise ValueError("--k and --n must be positive")
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    output_dir = args.output_dir.resolve()
+    output_dir.mkdir(parents=True, exist_ok=True)
+    print(f"Loading checkpoint: {args.checkpoint}")
+    model, checkpoint_epoch = load_feature_model(args.checkpoint, device)
+    dataset = LUNA16Dataset(args.metadata, args.patches, split="train")
+    features, labels, seriesuids, patch_files = extract_features(
+        model, dataset, device, args.batch_size, args.num_workers
+    )
+    print(
+        f"Extracted {features.shape}; negative={(labels == 0).sum()} "
+        f"positive={(labels == 1).sum()}"
+    )
+    bank = construct_bank(
+        features,
+        labels,
+        seriesuids,
+        patch_files,
+        args.checkpoint,
+        checkpoint_epoch,
+        args.k,
+        args.n,
+        args.seed,
+    )
+    with (output_dir / "prototype_bank.pkl").open("wb") as handle:
+        pickle.dump(bank, handle)
+    np.savez_compressed(
+        output_dir / "train_features.npz",
+        features=features,
+        labels=labels,
+        seriesuids=seriesuids,
+        patch_files=patch_files,
+    )
+    pd.DataFrame(bank["cluster_stats"]).to_csv(
+        output_dir / "cluster_stats.csv", index=False
+    )
+    save_prototype_grid(bank, args.patches, output_dir / "prototype_grid.png")
+    config = {
+        "checkpoint": str(args.checkpoint.resolve()),
+        "checkpoint_sha256": bank["checkpoint_sha256"],
+        "checkpoint_epoch": checkpoint_epoch,
+        "metadata": str(args.metadata.resolve()),
+        "patches": str(args.patches.resolve()),
+        "k": args.k,
+        "n": args.n,
+        "seed": args.seed,
+        "feature_shape": list(features.shape),
+    }
+    (output_dir / "config.json").write_text(
+        json.dumps(config, indent=2), encoding="utf-8"
+    )
+    print(f"Saved prototype bank and reports to {output_dir}")
 
-bank = {
-    "k_clusters": K_CLUSTERS,
-    "n_prototypes": N_PROTOTYPES,
-    "feature_dim": all_features.shape[1],
-    "prototypes": prototypes,
-    "features": all_features,
-    "labels": all_labels,
-    "seriesuids": all_names,
-    "cluster_stats": all_sim_results,
-}
 
-pkl_path = OUT_DIR / "prototype_bank.pkl"
-with open(pkl_path, "wb") as f:
-    pickle.dump(bank, f)
-print(f"  Saved: {pkl_path} ({pkl_path.stat().st_size / 1024:.1f} KB)")
-
-# Save features separately
-np.savez_compressed(OUT_DIR / "train_features.npz", features=all_features, labels=all_labels)
-print(f"  Saved: {OUT_DIR / 'train_features.npz'}")
-
-# ================================================================
-# Prototype sample grid
-# ================================================================
-print(f"\n[4/4] Generating prototype sample grid...")
-
-PATCHES_DIR = PROJECT_ROOT / "data" / "processed" / "patches"
-meta = pd.read_csv(str(PROJECT_ROOT / "data" / "processed" / "metadata.csv"))
-meta['split'] = meta['split'].astype(str)
-meta.loc[meta['split'].isin(['nan', '']), 'split'] = ''
-meta.loc[meta['subset_id'].isin(range(0,8)), 'split'] = 'train'
-meta.loc[meta['subset_id'] == 8, 'split'] = 'val'
-meta.loc[meta['subset_id'] == 9, 'split'] = 'test'
-train_meta = meta[meta['split'] == 'train']
-
-total_cells = K_CLUSTERS * 2  # 3 pos + 3 neg clusters
-n_cols = N_PROTOTYPES
-n_rows = total_cells
-cs, mg = 64, 4
-gw = n_cols * (cs + mg) + mg
-gh = n_rows * (cs + mg) + mg + 40
-grid = np.ones((gh, gw), dtype=np.float32)
-
-row_idx = 0
-for class_name in ["positive", "negative"]:
-    for c in range(K_CLUSTERS):
-        proto_indices = prototypes[class_name][c]["indices"]
-        for pi, idx in enumerate(proto_indices[:N_PROTOTYPES]):
-            row = train_meta.iloc[idx]
-            patch = np.load(PATCHES_DIR / row["patch_file"])
-            ys = 20 + row_idx * (cs + mg) + mg
-            xs = pi * (cs + mg) + mg
-            grid[ys:ys+cs, xs:xs+cs] = patch[1]  # center slice
-        row_idx += 1
-
-cv2.imwrite(str(OUT_DIR / "prototype_grid.png"), (np.clip(grid, 0, 1) * 255).astype(np.uint8))
-print(f"  Saved: {OUT_DIR / 'prototype_grid.png'}")
-
-print(f"\nAll deliverables in {OUT_DIR}/")
-print(f"  prototype_bank.pkl")
-print(f"  train_features.npz")
-print(f"  prototype_grid.png")
-print("=" * 60)
+if __name__ == "__main__":
+    main()

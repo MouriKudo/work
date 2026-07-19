@@ -1,0 +1,14 @@
+{
+  "epochs": 20,
+  "batch_size": 64,
+  "lr": 0.001,
+  "dropout": 0.3,
+  "augment": "strong",
+  "num_workers": 0,
+  "seed": 42,
+  "amp": true,
+  "metadata": "D:\\luna16-work\\data\\processed\\metadata.csv",
+  "patches": "D:\\luna16-work\\data\\processed\\patches",
+  "output_dir": "D:\\luna16-work\\runs\\lightweight\\simplecnn_strong_sd42",
+  "method": "simplecnn_strong"
+}

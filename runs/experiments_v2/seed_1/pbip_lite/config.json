@@ -1,0 +1,18 @@
+{
+  "epochs": 20,
+  "batch_size": 64,
+  "alpha": 0.3,
+  "beta": 0.0,
+  "prototype_temperature": 0.2,
+  "top_k": 20,
+  "lr": 0.0001,
+  "dropout": 0.3,
+  "augment": "strong",
+  "seed": 1,
+  "num_workers": 4,
+  "prototype_bank": "D:\\luna16-work\\runs\\experiments_v2\\seed_1\\prototype_bank\\prototype_bank.pkl",
+  "init_checkpoint": "D:\\luna16-work\\runs\\experiments_v2\\seed_1\\resnet18_strong\\best_model.pth",
+  "output_dir": "D:\\luna16-work\\runs\\experiments_v2\\seed_1\\pbip_lite",
+  "amp": true,
+  "method": "pbip_lite"
+}

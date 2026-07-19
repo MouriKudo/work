@@ -1,0 +1,48 @@
+$ D:\luna16-work\.venv\Scripts\python.exe -u D:\luna16-work\src\train.py --epochs 20 --batch_size 64 --augment strong --seed 1 --num_workers 4 --output_dir D:\luna16-work\runs\experiments_v2\seed_1\resnet18_strong
+
+LUNA16Dataset (split=train): 3553 samples | pos=916 (25.8%) | neg=2637 (74.2%)
+LUNA16Dataset (split=val): 462 samples | pos=114 (24.7%) | neg=348 (75.3%)
+LUNA16Dataset (split=test): 497 samples | pos=98 (19.7%) | neg=399 (80.3%)
+Device=cuda method=resnet18_strong epochs=20 seed=1 pretrained=True
+  Epoch   1 | Batch   50/  55 | Loss=0.1929 Acc=0.8272
+Epoch 01/20: train_loss=0.3982 train_acc=0.8338 val_auc=0.9394 val_f1=0.7897
+  Epoch   2 | Batch   50/  55 | Loss=0.1411 Acc=0.9200
+Epoch 02/20: train_loss=0.2173 train_acc=0.9193 val_auc=0.9807 val_f1=0.8626
+  Epoch   3 | Batch   50/  55 | Loss=0.3657 Acc=0.9222
+Epoch 03/20: train_loss=0.1987 train_acc=0.9207 val_auc=0.9528 val_f1=0.6391
+  Epoch   4 | Batch   50/  55 | Loss=0.2151 Acc=0.9334
+Epoch 04/20: train_loss=0.1816 train_acc=0.9344 val_auc=0.9707 val_f1=0.8061
+  Epoch   5 | Batch   50/  55 | Loss=0.1283 Acc=0.9406
+Epoch 05/20: train_loss=0.1595 train_acc=0.9395 val_auc=0.9815 val_f1=0.8792
+  Epoch   6 | Batch   50/  55 | Loss=0.1129 Acc=0.9469
+Epoch 06/20: train_loss=0.1499 train_acc=0.9443 val_auc=0.9628 val_f1=0.8774
+  Epoch   7 | Batch   50/  55 | Loss=0.2555 Acc=0.9469
+Epoch 07/20: train_loss=0.1378 train_acc=0.9474 val_auc=0.9611 val_f1=0.8411
+  Epoch   8 | Batch   50/  55 | Loss=0.0665 Acc=0.9481
+Epoch 08/20: train_loss=0.1364 train_acc=0.9466 val_auc=0.9685 val_f1=0.8696
+  Epoch   9 | Batch   50/  55 | Loss=0.0558 Acc=0.9528
+Epoch 09/20: train_loss=0.1262 train_acc=0.9540 val_auc=0.9780 val_f1=0.8947
+  Epoch  10 | Batch   50/  55 | Loss=0.0661 Acc=0.9581
+Epoch 10/20: train_loss=0.1197 train_acc=0.9591 val_auc=0.9773 val_f1=0.9189
+  Epoch  11 | Batch   50/  55 | Loss=0.1342 Acc=0.9641
+Epoch 11/20: train_loss=0.0982 train_acc=0.9648 val_auc=0.9924 val_f1=0.8932
+  Epoch  12 | Batch   50/  55 | Loss=0.1375 Acc=0.9663
+Epoch 12/20: train_loss=0.0938 train_acc=0.9668 val_auc=0.9742 val_f1=0.9065
+  Epoch  13 | Batch   50/  55 | Loss=0.0870 Acc=0.9669
+Epoch 13/20: train_loss=0.0857 train_acc=0.9673 val_auc=0.9911 val_f1=0.9174
+  Epoch  14 | Batch   50/  55 | Loss=0.0594 Acc=0.9703
+Epoch 14/20: train_loss=0.0868 train_acc=0.9696 val_auc=0.9881 val_f1=0.9259
+  Epoch  15 | Batch   50/  55 | Loss=0.0088 Acc=0.9694
+Epoch 15/20: train_loss=0.0788 train_acc=0.9705 val_auc=0.9902 val_f1=0.9279
+  Epoch  16 | Batch   50/  55 | Loss=0.1757 Acc=0.9769
+Epoch 16/20: train_loss=0.0693 train_acc=0.9770 val_auc=0.9915 val_f1=0.9038
+  Epoch  17 | Batch   50/  55 | Loss=0.1238 Acc=0.9778
+Epoch 17/20: train_loss=0.0626 train_acc=0.9778 val_auc=0.9940 val_f1=0.9266
+  Epoch  18 | Batch   50/  55 | Loss=0.0283 Acc=0.9781
+Epoch 18/20: train_loss=0.0567 train_acc=0.9790 val_auc=0.9913 val_f1=0.9412
+  Epoch  19 | Batch   50/  55 | Loss=0.1083 Acc=0.9772
+Epoch 19/20: train_loss=0.0628 train_acc=0.9778 val_auc=0.9921 val_f1=0.9266
+  Epoch  20 | Batch   50/  55 | Loss=0.0175 Acc=0.9809
+Epoch 20/20: train_loss=0.0571 train_acc=0.9818 val_auc=0.9923 val_f1=0.9266
+Test: AUC=0.9949 F1=0.9307 Acc=0.9718
+Saved results to D:\luna16-work\runs\experiments_v2\seed_1\resnet18_strong

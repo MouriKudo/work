@@ -24,6 +24,13 @@ env/
 runs/**/*.pth
 runs/**/predictions/
 *.log
+!runs/experiments_v2/**/*.log
+!runs/lightweight/simplecnn_strong_sd42/train.log
+
+# Local flow-validation runs; formal experiment outputs live in experiments_v2.
+runs/experiment_smoke_v2/
+runs/pbip_v2/*smoke*/
+runs/lightweight/*smoke*/
 
 # OS
 .DS_Store

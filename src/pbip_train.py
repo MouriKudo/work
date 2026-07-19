@@ -1,255 +1,535 @@
+"""Train PBIP-Lite on LUNA16 candidate patches.
+
+PBIP-Lite augments the ResNet18 classifier with class-aware prototype evidence:
+
+    base_logit = classifier(feature)
+    proto_logit = score(positive prototypes) - score(negative prototypes)
+    fused_logit = (1 - alpha) * base_logit + alpha * proto_logit
+
+When ``beta > 0``, a prototype classification loss encourages each sample to
+match prototypes from its own class.  ``beta=0`` is the PBIP-Lite ablation and
+``beta>0`` is PBIP-Lite with prototype contrastive supervision.
 """
-Task 5: PBIP-Lite (Prototype-Based Image Prompting - Lite)
-===========================================================
-核心思路：在 ResNet18 基础上加入原型相似度融合。
 
-架构：
-  ResNet18 backbone -> 512-dim feature ->
-    (a) FC -> 1-dim classification logit
-    (b) cosine_sim(feature, prototypes) -> proto_logit
-    -> fused_logit = (1-alpha)*logit_base + alpha*proto_logit
+from __future__ import annotations
 
-训练：BCE loss + prototype contrastive loss (beta factor)
-
-用法：
-  python src/pbip_train.py --epochs 20 --alpha 0.3 --beta 0.05
-"""
-import sys, pickle, argparse, json, datetime
+import argparse
+import datetime as dt
+import json
+import pickle
+import random
+import sys
 from pathlib import Path
+from typing import Dict, Iterable, Tuple
 
 import numpy as np
+import pandas as pd
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
+import torchvision.models as models
+from PIL import Image
+from sklearn.metrics import confusion_matrix, f1_score, roc_auc_score
+from torch.amp import GradScaler, autocast
 from torch.utils.data import DataLoader
-from torch.amp import autocast, GradScaler
-from sklearn.metrics import roc_auc_score, f1_score, confusion_matrix
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(PROJECT_ROOT / "src"))
+
 from luna16_dataset import LUNA16Dataset
+from plot_utils import render_line_chart
+from train import ResNet18Binary, get_augmentation
 
 
-# ====================== PBIP Model ======================
+DEFAULT_BANK = PROJECT_ROOT / "runs" / "prototype_bank" / "prototype_bank.pkl"
+DEFAULT_INIT_CHECKPOINT = (
+    PROJECT_ROOT
+    / "runs"
+    / "resnet18_aug-strong_sd42_strong_20260719_102942"
+    / "best_model.pth"
+)
+
+
+def set_seed(seed: int) -> None:
+    """Seed Python, NumPy and PyTorch."""
+    random.seed(seed)
+    np.random.seed(seed)
+    torch.manual_seed(seed)
+    if torch.cuda.is_available():
+        torch.cuda.manual_seed_all(seed)
+
+
+def prototype_class_logits(
+    cosine_similarity: torch.Tensor,
+    prototype_labels: torch.Tensor,
+    top_k: int = 20,
+    temperature: float = 0.2,
+) -> torch.Tensor:
+    """Aggregate prototype similarities into ``[negative, positive]`` logits.
+
+    The two classes are aggregated independently.  This is important: a high
+    similarity to a negative prototype must be evidence against a nodule, not
+    evidence for it.
+    """
+    if cosine_similarity.ndim != 2:
+        raise ValueError("cosine_similarity must have shape [batch, prototypes]")
+    if prototype_labels.ndim != 1:
+        raise ValueError("prototype_labels must have shape [prototypes]")
+    if cosine_similarity.shape[1] != prototype_labels.numel():
+        raise ValueError("prototype count and prototype_labels length do not match")
+    if top_k <= 0:
+        raise ValueError("top_k must be positive")
+    if temperature <= 0:
+        raise ValueError("temperature must be positive")
+
+    class_scores = []
+    for class_id in (0, 1):
+        class_mask = prototype_labels == class_id
+        if not torch.any(class_mask):
+            raise ValueError(f"prototype bank contains no class-{class_id} prototypes")
+        similarities = cosine_similarity[:, class_mask]
+        k = min(top_k, similarities.shape[1])
+        score = similarities.topk(k, dim=1).values.mean(dim=1)
+        class_scores.append(score / temperature)
+    return torch.stack(class_scores, dim=1)
+
+
+def prototype_contrastive_loss(
+    class_logits: torch.Tensor,
+    labels: torch.Tensor,
+) -> torch.Tensor:
+    """Class-aware prototype contrastive loss.
+
+    Cross entropy over negative/positive prototype evidence is a stable,
+    non-negative supervised contrastive objective.  Unlike the previous
+    implementation, labels directly determine which prototype class is pulled
+    closer.
+    """
+    return F.cross_entropy(class_logits, labels.long())
+
+
+def _load_prototype_tensors(bank_path: Path) -> Tuple[torch.Tensor, torch.Tensor, dict]:
+    with bank_path.open("rb") as handle:
+        bank = pickle.load(handle)
+
+    prototype_features = []
+    prototype_labels = []
+    class_mapping = (("negative", 0), ("positive", 1))
+    for class_name, class_id in class_mapping:
+        if class_name not in bank["prototypes"]:
+            raise ValueError(f"prototype bank is missing '{class_name}' prototypes")
+        for cluster in bank["prototypes"][class_name]:
+            indices = np.asarray(cluster["indices"], dtype=np.int64)
+            features = np.asarray(bank["features"])[indices]
+            prototype_features.append(torch.as_tensor(features, dtype=torch.float32))
+            prototype_labels.append(
+                torch.full((len(indices),), class_id, dtype=torch.long)
+            )
+
+    features_tensor = torch.cat(prototype_features, dim=0)
+    labels_tensor = torch.cat(prototype_labels, dim=0)
+    return features_tensor, labels_tensor, bank
+
 
 class PBIPLite(nn.Module):
-    """ResNet18 + Prototype Cosine Similarity Fusion"""
-    def __init__(self, prototype_bank_path, alpha=0.3, pretrained=False):
+    """ResNet18 binary classifier with class-aware prototype fusion."""
+
+    def __init__(
+        self,
+        prototype_bank_path: str | Path,
+        alpha: float = 0.3,
+        top_k: int = 20,
+        prototype_temperature: float = 0.2,
+        dropout: float = 0.3,
+    ) -> None:
         super().__init__()
-        # Backbone (same as ResNet18Binary but return features)
-        import torchvision.models as models
-        self.backbone = models.resnet18(weights=None)
-        self.backbone.conv1 = nn.Conv2d(3, 64, kernel_size=3, stride=1, padding=1, bias=False)
-        self.backbone.maxpool = nn.Identity()
-        self.backbone.fc = nn.Identity()  # Remove FC, we'll use features directly
+        if not 0.0 <= alpha <= 1.0:
+            raise ValueError("alpha must be in [0, 1]")
 
-        # Classification head
-        self.classifier = nn.Sequential(
-            nn.Dropout(0.3),
-            nn.Linear(512, 1),
+        backbone = models.resnet18(weights=None)
+        backbone.conv1 = nn.Conv2d(
+            3, 64, kernel_size=3, stride=1, padding=1, bias=False
         )
+        backbone.maxpool = nn.Identity()
+        backbone.fc = nn.Identity()
+        self.backbone = backbone
+        self.classifier = nn.Sequential(nn.Dropout(dropout), nn.Linear(512, 1))
 
-        # Load prototypes
-        bank = pickle.load(open(prototype_bank_path, 'rb'))
-        # Build prototype tensor: (N_proto, 512)
-        proto_list = []
-        for class_name in ['positive', 'negative']:
-            for c in range(bank['k_clusters']):
-                indices = bank['prototypes'][class_name][c]['indices']
-                feats = bank['features'][indices]  # (N, 512)
-                proto_list.append(torch.from_numpy(feats))
-        self.prototypes = torch.cat(proto_list, dim=0)  # (K*2*N, 512)
-        self.n_prototypes = self.prototypes.shape[0]
-        print(f"  Prototypes loaded: {self.n_prototypes} prototypes ({self.prototypes.shape})")
+        prototypes, prototype_labels, bank = _load_prototype_tensors(
+            Path(prototype_bank_path)
+        )
+        self.register_buffer("prototypes", F.normalize(prototypes, dim=1))
+        self.register_buffer("prototype_labels", prototype_labels)
+        self.alpha = float(alpha)
+        self.top_k = int(top_k)
+        self.prototype_temperature = float(prototype_temperature)
+        self.prototype_bank_metadata = {
+            "checkpoint": bank.get("checkpoint"),
+            "k_clusters": bank.get("k_clusters"),
+            "n_prototypes": bank.get("n_prototypes"),
+        }
 
-        self.alpha = alpha  # How much to weight prototype signal vs base classifier
+    def load_baseline_checkpoint(self, checkpoint_path: str | Path) -> int:
+        """Initialize backbone and classifier from the bank's feature model."""
+        checkpoint = torch.load(
+            str(checkpoint_path), map_location="cpu", weights_only=False
+        )
+        baseline = ResNet18Binary(pretrained=False, dropout=self.classifier[0].p)
+        baseline.load_state_dict(checkpoint["model_state_dict"])
 
-    def forward(self, x):
-        # Extract features
-        features = self.backbone(x)  # (B, 512)
-        features_norm = features / (features.norm(dim=1, keepdim=True) + 1e-8)
+        backbone_state = {
+            key: value
+            for key, value in baseline.backbone.state_dict().items()
+            if not key.startswith("fc.")
+        }
+        missing, unexpected = self.backbone.load_state_dict(backbone_state, strict=False)
+        meaningful_missing = [key for key in missing if not key.startswith("fc.")]
+        if meaningful_missing or unexpected:
+            raise RuntimeError(
+                f"baseline backbone mismatch: missing={meaningful_missing}, "
+                f"unexpected={unexpected}"
+            )
+        self.classifier.load_state_dict(baseline.backbone.fc.state_dict())
+        return int(checkpoint.get("epoch", -1))
 
-        # Base classification
-        logit_base = self.classifier(features).squeeze(-1)  # (B,)
+    def forward(
+        self, x: torch.Tensor
+    ) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]:
+        features = self.backbone(x)
+        normalized_features = F.normalize(features, dim=1)
+        base_logit = self.classifier(features).squeeze(-1)
 
-        # Prototype similarity
-        proto_device = features.device
-        if self.prototypes.device != proto_device:
-            self.prototypes = self.prototypes.to(proto_device)
-        proto_norm = self.prototypes / (self.prototypes.norm(dim=1, keepdim=True) + 1e-8)
-        cos_sim = features_norm @ proto_norm.T  # (B, N_proto)
+        cosine_similarity = normalized_features @ self.prototypes.T
+        class_logits = prototype_class_logits(
+            cosine_similarity,
+            self.prototype_labels,
+            top_k=self.top_k,
+            temperature=self.prototype_temperature,
+        )
+        prototype_logit = class_logits[:, 1] - class_logits[:, 0]
+        fused_logit = (1.0 - self.alpha) * base_logit + self.alpha * prototype_logit
+        return fused_logit, features, cosine_similarity, class_logits
 
-        # Proto logit: mean cosine sim (pos prototypes give high sim -> high prob)
-        # Simple approach: mean of top-K cosine similarities
-        top_k = min(20, self.n_prototypes)
-        top_sim, _ = torch.topk(cos_sim, top_k, dim=1)
-        proto_score = top_sim.mean(dim=1)  # (B,)
-
-        # Fuse: proto_score is "how similar to nodule prototypes"
-        # Rescale proto_score to logit space
-        logit_proto = proto_score * 2.0 - 1.0  # Map [0,1] cos_sim range to ~[-1,1]
-
-        # Weighted fusion
-        logit = (1 - self.alpha) * logit_base + self.alpha * logit_proto
-
-        return logit, features, cos_sim
-
-
-# ====================== Prototype Contrastive Loss ======================
-
-def prototype_contrastive_loss(features, cos_sim, prototypes, labels, temperature=0.07):
-    """
-    让正样本靠近正类原型，负样本靠近负类原型。
-    features: (B, 512)
-    cos_sim: (B, N_proto)
-    labels: (B,)  1=positive, 0=negative
-    """
-    batch_size = features.shape[0]
-    features_norm = features / (features.norm(dim=1, keepdim=True) + 1e-8)
-    proto_norm = prototypes / (prototypes.norm(dim=1, keepdim=True) + 1e-8)
-
-    loss = torch.tensor(0.0, device=features.device)
-    for i in range(batch_size):
-        sims = features_norm[i:i+1] @ proto_norm.T  # (1, N_proto)
-        # Top-5 most similar prototypes
-        top_sims, top_idx = torch.topk(sims.squeeze(), min(10, prototypes.shape[0]))
-        loss += -torch.log(top_sims.mean() / temperature + 1e-8)
-
-    return loss / batch_size
-
-
-# ====================== Eval ======================
 
 @torch.no_grad()
-def evaluate(model, loader, criterion, device):
+def evaluate(
+    model: PBIPLite,
+    loader: DataLoader,
+    criterion: nn.Module,
+    device: torch.device,
+) -> Dict[str, object]:
     model.eval()
-    all_preds, all_labels, total_loss = [], [], 0.0
+    probabilities = []
+    labels = []
+    total_loss = 0.0
+    total_proto_loss = 0.0
     for x, y, _ in loader:
-        x, y = x.to(device), y.to(device).float()
-        logit, _, _ = model(x)
-        loss = criterion(logit, y)
-        total_loss += loss.item() * x.size(0)
-        all_preds.append(torch.sigmoid(logit).cpu())
-        all_labels.append(y.cpu().long())
-    all_preds = torch.cat(all_preds).numpy()
-    all_labels = torch.cat(all_labels).numpy()
-    pred_bin = (all_preds >= 0.5).astype(int)
+        x = x.to(device, non_blocking=True)
+        y = y.to(device, non_blocking=True)
+        logits, _, _, class_logits = model(x)
+        cls_loss = criterion(logits, y.float())
+        proto_loss = prototype_contrastive_loss(class_logits, y)
+        total_loss += cls_loss.item() * x.size(0)
+        total_proto_loss += proto_loss.item() * x.size(0)
+        probabilities.append(torch.sigmoid(logits).cpu())
+        labels.append(y.cpu())
+
+    probabilities_np = torch.cat(probabilities).numpy()
+    labels_np = torch.cat(labels).numpy()
+    predictions = (probabilities_np >= 0.5).astype(np.int64)
+    cm = confusion_matrix(labels_np, predictions, labels=[0, 1])
     return {
         "loss": total_loss / len(loader.dataset),
-        "acc": confusion_matrix(all_labels, pred_bin).diagonal().sum() / len(all_labels),
-        "auc": roc_auc_score(all_labels, all_preds),
-        "f1": f1_score(all_labels, pred_bin, zero_division=0),
-        "cm": confusion_matrix(all_labels, pred_bin).tolist(),
+        "prototype_loss": total_proto_loss / len(loader.dataset),
+        "acc": float(cm.diagonal().sum() / cm.sum()),
+        "auc": float(roc_auc_score(labels_np, probabilities_np)),
+        "f1": float(f1_score(labels_np, predictions, zero_division=0)),
+        "cm": cm.tolist(),
     }
 
 
-def train_one_epoch(model, loader, optimizer, criterion, scaler, device, epoch, beta=0.05):
+def train_one_epoch(
+    model: PBIPLite,
+    loader: DataLoader,
+    optimizer: optim.Optimizer,
+    criterion: nn.Module,
+    scaler: GradScaler,
+    device: torch.device,
+    epoch: int,
+    beta: float,
+    amp_enabled: bool,
+) -> Dict[str, float]:
     model.train()
-    total_loss, correct, total = 0.0, 0, 0
-    for batch_idx, (x, y, _) in enumerate(loader):
-        x, y = x.to(device), y.to(device).float()
+    totals = {"loss": 0.0, "cls_loss": 0.0, "proto_loss": 0.0}
+    correct = 0
+    sample_count = 0
+
+    for batch_index, (x, y, _) in enumerate(loader):
+        x = x.to(device, non_blocking=True)
+        y = y.to(device, non_blocking=True)
         optimizer.zero_grad(set_to_none=True)
-        with autocast(device_type='cuda' if x.is_cuda else 'cpu'):
-            logit, features, cos_sim = model(x)
-            cls_loss = criterion(logit, y)
-            proto_loss = prototype_contrastive_loss(features, cos_sim, model.prototypes, y)
+
+        with autocast(device_type=device.type, enabled=amp_enabled):
+            logits, _, _, class_logits = model(x)
+            cls_loss = criterion(logits, y.float())
+            proto_loss = prototype_contrastive_loss(class_logits, y)
             loss = cls_loss + beta * proto_loss
+
         scaler.scale(loss).backward()
         scaler.step(optimizer)
         scaler.update()
-        total_loss += loss.item() * x.size(0)
-        preds = (torch.sigmoid(logit) >= 0.5).int()
-        correct += (preds == y.int()).sum().item()
-        total += x.size(0)
-        if (batch_idx + 1) % 50 == 0:
-            print(f"  Epoch {epoch:3d} | Batch {batch_idx+1:4d}/{len(loader):4d} | Loss: {loss.item():.4f} | Acc: {correct/total:.4f}")
-    return total_loss / total, correct / total
+
+        batch_size = x.size(0)
+        totals["loss"] += loss.item() * batch_size
+        totals["cls_loss"] += cls_loss.item() * batch_size
+        totals["proto_loss"] += proto_loss.item() * batch_size
+        predictions = (torch.sigmoid(logits) >= 0.5).long()
+        correct += (predictions == y).sum().item()
+        sample_count += batch_size
+
+        if (batch_index + 1) % 50 == 0:
+            print(
+                f"  Epoch {epoch:3d} | Batch {batch_index + 1:4d}/{len(loader):4d} "
+                f"| total={loss.item():.4f} cls={cls_loss.item():.4f} "
+                f"proto={proto_loss.item():.4f} acc={correct / sample_count:.4f}"
+            )
+
+    return {
+        "loss": totals["loss"] / sample_count,
+        "cls_loss": totals["cls_loss"] / sample_count,
+        "proto_loss": totals["proto_loss"] / sample_count,
+        "acc": correct / sample_count,
+    }
 
 
-# ====================== Main ======================
+def save_training_plot(history: Dict[str, Iterable[float]], output_path: Path) -> None:
+    epochs = np.arange(1, len(history["train_loss"]) + 1)
+    loss_chart = render_line_chart(
+        {
+            "train total": (epochs, history["train_loss"]),
+            "train BCE": (epochs, history["train_cls_loss"]),
+            "train prototype": (epochs, history["train_proto_loss"]),
+            "validation BCE": (epochs, history["val_loss"]),
+        },
+        "Loss",
+        "Epoch",
+        "Loss",
+        width=620,
+        height=420,
+    )
+    accuracy_chart = render_line_chart(
+        {
+            "train": (epochs, history["train_acc"]),
+            "validation": (epochs, history["val_acc"]),
+        },
+        "Accuracy",
+        "Epoch",
+        "Accuracy",
+        ylim=(0.0, 1.0),
+        width=620,
+        height=420,
+    )
+    metric_chart = render_line_chart(
+        {
+            "validation AUC": (epochs, history["val_auc"]),
+            "validation F1": (epochs, history["val_f1"]),
+        },
+        "Validation metrics",
+        "Epoch",
+        "Score",
+        ylim=(0.0, 1.0),
+        width=620,
+        height=420,
+    )
+    dashboard = Image.new("RGB", (1860, 420), "white")
+    dashboard.paste(loss_chart, (0, 0))
+    dashboard.paste(accuracy_chart, (620, 0))
+    dashboard.paste(metric_chart, (1240, 0))
+    dashboard.save(output_path)
 
-def main():
-    parser = argparse.ArgumentParser()
+
+def parse_args() -> argparse.Namespace:
+    parser = argparse.ArgumentParser(description="Train class-aware PBIP-Lite")
     parser.add_argument("--epochs", type=int, default=20)
     parser.add_argument("--batch_size", type=int, default=64)
-    parser.add_argument("--alpha", type=float, default=0.3, help="Proto fusion weight")
-    parser.add_argument("--beta", type=float, default=0.05, help="Contrastive loss weight")
-    parser.add_argument("--lr", type=float, default=1e-3)
+    parser.add_argument("--alpha", type=float, default=0.3)
+    parser.add_argument("--beta", type=float, default=0.0)
+    parser.add_argument("--prototype_temperature", type=float, default=0.2)
+    parser.add_argument("--top_k", type=int, default=20)
+    parser.add_argument("--lr", type=float, default=1e-4)
+    parser.add_argument("--dropout", type=float, default=0.3)
+    parser.add_argument("--augment", choices=["none", "basic", "strong"], default="strong")
     parser.add_argument("--seed", type=int, default=42)
-    args = parser.parse_args()
+    parser.add_argument("--num_workers", type=int, default=4)
+    parser.add_argument("--prototype_bank", type=Path, default=DEFAULT_BANK)
+    parser.add_argument("--init_checkpoint", type=Path, default=DEFAULT_INIT_CHECKPOINT)
+    parser.add_argument("--output_dir", type=Path)
+    parser.add_argument(
+        "--amp", action=argparse.BooleanOptionalAction, default=True
+    )
+    return parser.parse_args()
 
-    torch.manual_seed(args.seed); np.random.seed(args.seed)
+
+def main() -> None:
+    args = parse_args()
+    if args.beta < 0:
+        raise ValueError("beta must be non-negative")
+    set_seed(args.seed)
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    print(f"Device: {device} | alpha={args.alpha} | beta={args.beta} | seed={args.seed}")
+    amp_enabled = bool(args.amp and device.type == "cuda")
+    print(
+        f"Device={device} epochs={args.epochs} alpha={args.alpha} beta={args.beta} "
+        f"augment={args.augment} seed={args.seed}"
+    )
 
-    # Data
-    print("\nLoading data...")
-    train_ds = LUNA16Dataset(split="train")
+    train_transform = get_augmentation(args.augment)
+    train_ds = LUNA16Dataset(split="train", transform=train_transform)
     val_ds = LUNA16Dataset(split="val")
     test_ds = LUNA16Dataset(split="test")
-    train_loader = DataLoader(train_ds, batch_size=args.batch_size, shuffle=True, num_workers=0, pin_memory=True, drop_last=True)
-    val_loader = DataLoader(val_ds, batch_size=args.batch_size, shuffle=False, num_workers=0, pin_memory=True)
-    test_loader = DataLoader(test_ds, batch_size=args.batch_size, shuffle=False, num_workers=0, pin_memory=True)
-    print(f"  Train: {len(train_ds)} | Val: {len(val_ds)} | Test: {len(test_ds)}")
+    generator = torch.Generator().manual_seed(args.seed)
+    loader_kwargs = {
+        "batch_size": args.batch_size,
+        "num_workers": args.num_workers,
+        "pin_memory": device.type == "cuda",
+    }
+    train_loader = DataLoader(
+        train_ds,
+        shuffle=True,
+        drop_last=True,
+        generator=generator,
+        **loader_kwargs,
+    )
+    val_loader = DataLoader(val_ds, shuffle=False, **loader_kwargs)
+    test_loader = DataLoader(test_ds, shuffle=False, **loader_kwargs)
 
-    # Model
-    print("\nBuilding PBIP-Lite...")
-    bank_path = PROJECT_ROOT / "runs" / "prototype_bank" / "prototype_bank.pkl"
-    model = PBIPLite(str(bank_path), alpha=args.alpha, pretrained=False).to(device)
-    print(f"  Total params: {sum(p.numel() for p in model.parameters()):,}")
+    model = PBIPLite(
+        args.prototype_bank,
+        alpha=args.alpha,
+        top_k=args.top_k,
+        prototype_temperature=args.prototype_temperature,
+        dropout=args.dropout,
+    )
+    init_epoch = model.load_baseline_checkpoint(args.init_checkpoint)
+    model.to(device)
+    print(
+        f"Loaded {model.prototypes.shape[0]} prototypes and initialized from "
+        f"{args.init_checkpoint} (epoch={init_epoch})"
+    )
 
     criterion = nn.BCEWithLogitsLoss()
     optimizer = optim.AdamW(model.parameters(), lr=args.lr, weight_decay=1e-4)
     scheduler = optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=args.epochs)
-    scaler = GradScaler('cuda' if torch.cuda.is_available() else 'cpu')
+    scaler = GradScaler("cuda", enabled=amp_enabled)
 
-    tag = f"alpha{args.alpha}_beta{args.beta}_sd{args.seed}"
-    run_dir = PROJECT_ROOT / "runs" / f"pbip_{tag}_{datetime.datetime.now().strftime('%Y%m%d_%H%M%S')}"
+    method = "pbip_lite" if args.beta == 0 else "pbip_contrast"
+    if args.output_dir is None:
+        timestamp = dt.datetime.now().strftime("%Y%m%d_%H%M%S")
+        run_dir = PROJECT_ROOT / "runs" / (
+            f"{method}_alpha{args.alpha}_beta{args.beta}_sd{args.seed}_{timestamp}"
+        )
+    else:
+        run_dir = args.output_dir.resolve()
     run_dir.mkdir(parents=True, exist_ok=True)
-    print(f"  Run dir: {run_dir}")
 
-    # Train
-    print(f"\nTraining PBIP-Lite (alpha={args.alpha}, beta={args.beta})...")
-    t0 = datetime.datetime.now()
-    history = {"train_loss": [], "train_acc": [], "val_loss": [], "val_acc": [], "val_auc": [], "val_f1": []}
-    best_val_auc, best_path = 0.0, None
+    config = vars(args).copy()
+    config.update(
+        {
+            "prototype_bank": str(args.prototype_bank.resolve()),
+            "init_checkpoint": str(args.init_checkpoint.resolve()),
+            "output_dir": str(run_dir),
+            "method": method,
+        }
+    )
+    (run_dir / "config.json").write_text(
+        json.dumps(config, indent=2), encoding="utf-8"
+    )
+
+    history = {
+        "train_loss": [],
+        "train_cls_loss": [],
+        "train_proto_loss": [],
+        "train_acc": [],
+        "val_loss": [],
+        "val_proto_loss": [],
+        "val_acc": [],
+        "val_auc": [],
+        "val_f1": [],
+    }
+    best_val_auc = float("-inf")
+    best_path = run_dir / "best_model.pth"
+    started_at = dt.datetime.now()
 
     for epoch in range(1, args.epochs + 1):
-        t_loss, t_acc = train_one_epoch(model, train_loader, optimizer, criterion, scaler, device, epoch, args.beta)
+        train_metrics = train_one_epoch(
+            model,
+            train_loader,
+            optimizer,
+            criterion,
+            scaler,
+            device,
+            epoch,
+            args.beta,
+            amp_enabled,
+        )
+        validation_metrics = evaluate(model, val_loader, criterion, device)
         scheduler.step()
-        val_metrics = evaluate(model, val_loader, criterion, device)
-        lr_now = optimizer.param_groups[0]['lr']
-        print(f"  === Epoch {epoch:3d}/{args.epochs} === T Loss: {t_loss:.4f} T Acc: {t_acc:.4f} | "
-              f"V Loss: {val_metrics['loss']:.4f} V AUC: {val_metrics['auc']:.4f} V F1: {val_metrics['f1']:.4f} | LR: {lr_now:.2e}")
-        for k, v in [("train_loss", t_loss), ("train_acc", t_acc), ("val_loss", val_metrics["loss"]),
-                     ("val_acc", val_metrics["acc"]), ("val_auc", val_metrics["auc"]), ("val_f1", val_metrics["f1"])]:
-            history[k].append(v)
-        if val_metrics["auc"] > best_val_auc:
-            best_val_auc = val_metrics["auc"]
-            best_path = run_dir / "best_model.pth"
-            torch.save({"epoch": epoch, "model_state_dict": model.state_dict(), "val_metrics": val_metrics, "history": history, "args": vars(args)}, best_path)
-            print(f"  >>> Best saved (val AUC={best_val_auc:.4f})")
 
-    elapsed = datetime.datetime.now() - t0
-    print(f"\nTraining done: {elapsed} | Best val AUC: {best_val_auc:.4f}")
+        history["train_loss"].append(train_metrics["loss"])
+        history["train_cls_loss"].append(train_metrics["cls_loss"])
+        history["train_proto_loss"].append(train_metrics["proto_loss"])
+        history["train_acc"].append(train_metrics["acc"])
+        history["val_loss"].append(validation_metrics["loss"])
+        history["val_proto_loss"].append(validation_metrics["prototype_loss"])
+        history["val_acc"].append(validation_metrics["acc"])
+        history["val_auc"].append(validation_metrics["auc"])
+        history["val_f1"].append(validation_metrics["f1"])
 
-    # Test
-    print("\nFinal test...")
-    if best_path:
-        ckpt = torch.load(best_path, map_location=device, weights_only=False)
-        model.load_state_dict(ckpt["model_state_dict"])
+        print(
+            f"Epoch {epoch:02d}/{args.epochs}: train={train_metrics['loss']:.4f} "
+            f"(BCE={train_metrics['cls_loss']:.4f}, proto={train_metrics['proto_loss']:.4f}) "
+            f"val_auc={validation_metrics['auc']:.4f} "
+            f"val_f1={validation_metrics['f1']:.4f}"
+        )
+
+        if validation_metrics["auc"] > best_val_auc:
+            best_val_auc = float(validation_metrics["auc"])
+            torch.save(
+                {
+                    "epoch": epoch,
+                    "model_state_dict": model.state_dict(),
+                    "val_metrics": validation_metrics,
+                    "args": config,
+                },
+                best_path,
+            )
+
+    checkpoint = torch.load(best_path, map_location=device, weights_only=False)
+    model.load_state_dict(checkpoint["model_state_dict"])
     test_metrics = evaluate(model, test_loader, criterion, device)
-    print(f"  Test AUC: {test_metrics['auc']:.4f}  F1: {test_metrics['f1']:.4f}  Acc: {test_metrics['acc']:.4f}")
-    print(f"  CM: TN={test_metrics['cm'][0][0]} FP={test_metrics['cm'][0][1]} FN={test_metrics['cm'][1][0]} TP={test_metrics['cm'][1][1]}")
-
-    results = {"args": vars(args), "test_metrics": test_metrics, "history": history, "best_val_auc": best_val_auc,
-               "timestamp": datetime.datetime.now().isoformat()}
-    json.dump(results, open(run_dir / "results.json", "w"), indent=2, default=str)
+    elapsed_seconds = (dt.datetime.now() - started_at).total_seconds()
+    results = {
+        "timestamp": dt.datetime.now().isoformat(),
+        "method": method,
+        "args": config,
+        "best_epoch": int(checkpoint["epoch"]),
+        "best_val_auc": best_val_auc,
+        "test_metrics": test_metrics,
+        "history": history,
+        "elapsed_seconds": elapsed_seconds,
+    }
+    (run_dir / "results.json").write_text(
+        json.dumps(results, indent=2), encoding="utf-8"
+    )
     pd.DataFrame(history).to_csv(run_dir / "training_curve.csv", index=False)
-    print(f"\nSaved: {run_dir}/")
+    save_training_plot(history, run_dir / "training_curves.png")
+
+    print(
+        f"Test: AUC={test_metrics['auc']:.4f} F1={test_metrics['f1']:.4f} "
+        f"Acc={test_metrics['acc']:.4f}"
+    )
+    print(f"Saved results to {run_dir}")
 
 
 if __name__ == "__main__":
-    import pandas as pd
     main()

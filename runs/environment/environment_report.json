@@ -1,0 +1,22 @@
+{
+  "python": "3.10.20 | packaged by conda-forge | (main, Jun 11 2026, 03:28:51) [MSC v.1944 64 bit (AMD64)]",
+  "platform": "Windows-10-10.0.26200-SP0",
+  "torch": "2.11.0+cu130",
+  "torchvision": "0.26.0+cu130",
+  "cuda_available": true,
+  "cuda_runtime": "13.0",
+  "gpu": "NVIDIA GeForce RTX 4060 Laptop GPU",
+  "numpy": "2.2.6",
+  "pandas": "2.3.3",
+  "SimpleITK": "2.5.5",
+  "scikit_learn": "1.7.2",
+  "opencv": "5.0.0",
+  "matplotlib": "3.10.9",
+  "Pillow": "12.2.0",
+  "raw_subsets": 10,
+  "processed_patches": 4512,
+  "metadata_rows": 4512,
+  "metadata_positive": 1128,
+  "metadata_negative": 3384,
+  "unique_cts": 863
+}

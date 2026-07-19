@@ -1,0 +1,14 @@
+{
+  "checkpoint": "D:\\luna16-work\\runs\\experiments_v2\\seed_2\\resnet18_strong\\best_model.pth",
+  "checkpoint_sha256": "5f5e648ca97f4d9ccc634ff061593e2fce78b1bd1767f9e126743bdcd74c20cb",
+  "checkpoint_epoch": 18,
+  "metadata": "D:\\luna16-work\\data\\processed\\metadata.csv",
+  "patches": "D:\\luna16-work\\data\\processed\\patches",
+  "k": 3,
+  "n": 20,
+  "seed": 2,
+  "feature_shape": [
+    3553,
+    512
+  ]
+}

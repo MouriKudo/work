@@ -1,0 +1,6 @@
+{
+  "selection_split": "validation",
+  "objective": "maximum_f1",
+  "threshold": 0.22028842568397522,
+  "validation_f1": 0.9385964912280702
+}

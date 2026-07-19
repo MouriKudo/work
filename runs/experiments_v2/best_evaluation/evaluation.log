@@ -1,0 +1,6 @@
+$ D:\luna16-work\.venv\Scripts\python.exe -u D:\luna16-work\src\metrics.py --model resnet18 --checkpoint D:\luna16-work\runs\experiments_v2\seed_1\resnet18_strong\best_model.pth --output_dir D:\luna16-work\runs\experiments_v2\best_evaluation --num_workers 0
+
+LUNA16Dataset (split=val): 462 samples | pos=114 (24.7%) | neg=348 (75.3%)
+LUNA16Dataset (split=test): 497 samples | pos=98 (19.7%) | neg=399 (80.3%)
+Selected threshold=0.220288 on validation F1=0.9386; test AUC=0.9949, F1=0.9143, sampled-candidate CPM=0.9927
+Saved evaluation to D:\luna16-work\runs\experiments_v2\best_evaluation

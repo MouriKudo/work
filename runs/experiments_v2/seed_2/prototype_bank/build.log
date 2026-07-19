@@ -1,0 +1,6 @@
+$ D:\luna16-work\.venv\Scripts\python.exe -u D:\luna16-work\src\prototype_bank.py --checkpoint D:\luna16-work\runs\experiments_v2\seed_2\resnet18_strong\best_model.pth --output_dir D:\luna16-work\runs\experiments_v2\seed_2\prototype_bank --seed 2 --num_workers 4
+
+Loading checkpoint: D:\luna16-work\runs\experiments_v2\seed_2\resnet18_strong\best_model.pth
+LUNA16Dataset (split=train): 3553 samples | pos=916 (25.8%) | neg=2637 (74.2%)
+Extracted (3553, 512); negative=2637 positive=916
+Saved prototype bank and reports to D:\luna16-work\runs\experiments_v2\seed_2\prototype_bank

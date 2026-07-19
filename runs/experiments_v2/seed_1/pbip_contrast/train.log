@@ -1,0 +1,49 @@
+$ D:\luna16-work\.venv\Scripts\python.exe -u D:\luna16-work\src\pbip_train.py --epochs 20 --batch_size 64 --augment strong --alpha 0.3 --beta 0.05 --seed 1 --num_workers 4 --prototype_bank D:\luna16-work\runs\experiments_v2\seed_1\prototype_bank\prototype_bank.pkl --init_checkpoint D:\luna16-work\runs\experiments_v2\seed_1\resnet18_strong\best_model.pth --output_dir D:\luna16-work\runs\experiments_v2\seed_1\pbip_contrast
+
+Device=cuda epochs=20 alpha=0.3 beta=0.05 augment=strong seed=1
+LUNA16Dataset (split=train): 3553 samples | pos=916 (25.8%) | neg=2637 (74.2%)
+LUNA16Dataset (split=val): 462 samples | pos=114 (24.7%) | neg=348 (75.3%)
+LUNA16Dataset (split=test): 497 samples | pos=98 (19.7%) | neg=399 (80.3%)
+Loaded 120 prototypes and initialized from D:\luna16-work\runs\experiments_v2\seed_1\resnet18_strong\best_model.pth (epoch=17)
+  Epoch   1 | Batch   50/  55 | total=0.0254 cls=0.0190 proto=0.1261 acc=0.9778
+Epoch 01/20: train=0.0744 (BCE=0.0660, proto=0.1683) val_auc=0.9916 val_f1=0.9309
+  Epoch   2 | Batch   50/  55 | total=0.0169 cls=0.0113 proto=0.1117 acc=0.9809
+Epoch 02/20: train=0.0621 (BCE=0.0549, proto=0.1443) val_auc=0.9883 val_f1=0.9196
+  Epoch   3 | Batch   50/  55 | total=0.0430 cls=0.0353 proto=0.1558 acc=0.9822
+Epoch 03/20: train=0.0635 (BCE=0.0565, proto=0.1406) val_auc=0.9870 val_f1=0.9132
+  Epoch   4 | Batch   50/  55 | total=0.1395 cls=0.1301 proto=0.1897 acc=0.9819
+Epoch 04/20: train=0.0584 (BCE=0.0514, proto=0.1385) val_auc=0.9879 val_f1=0.9231
+  Epoch   5 | Batch   50/  55 | total=0.0088 cls=0.0040 proto=0.0953 acc=0.9831
+Epoch 05/20: train=0.0570 (BCE=0.0503, proto=0.1331) val_auc=0.9928 val_f1=0.9182
+  Epoch   6 | Batch   50/  55 | total=0.0295 cls=0.0240 proto=0.1108 acc=0.9866
+Epoch 06/20: train=0.0466 (BCE=0.0404, proto=0.1255) val_auc=0.9887 val_f1=0.9209
+  Epoch   7 | Batch   50/  55 | total=0.1029 cls=0.0947 proto=0.1630 acc=0.9894
+Epoch 07/20: train=0.0409 (BCE=0.0350, proto=0.1195) val_auc=0.9887 val_f1=0.9209
+  Epoch   8 | Batch   50/  55 | total=0.0325 cls=0.0264 proto=0.1222 acc=0.9891
+Epoch 08/20: train=0.0406 (BCE=0.0347, proto=0.1193) val_auc=0.9907 val_f1=0.9224
+  Epoch   9 | Batch   50/  55 | total=0.0447 cls=0.0381 proto=0.1319 acc=0.9894
+Epoch 09/20: train=0.0394 (BCE=0.0335, proto=0.1181) val_auc=0.9930 val_f1=0.9375
+  Epoch  10 | Batch   50/  55 | total=0.0254 cls=0.0193 proto=0.1232 acc=0.9912
+Epoch 10/20: train=0.0333 (BCE=0.0277, proto=0.1124) val_auc=0.9902 val_f1=0.9273
+  Epoch  11 | Batch   50/  55 | total=0.0218 cls=0.0173 proto=0.0891 acc=0.9953
+Epoch 11/20: train=0.0272 (BCE=0.0219, proto=0.1062) val_auc=0.9871 val_f1=0.9151
+  Epoch  12 | Batch   50/  55 | total=0.0763 cls=0.0701 proto=0.1226 acc=0.9909
+Epoch 12/20: train=0.0344 (BCE=0.0288, proto=0.1113) val_auc=0.9906 val_f1=0.9217
+  Epoch  13 | Batch   50/  55 | total=0.0119 cls=0.0073 proto=0.0921 acc=0.9928
+Epoch 13/20: train=0.0273 (BCE=0.0219, proto=0.1065) val_auc=0.9880 val_f1=0.9217
+  Epoch  14 | Batch   50/  55 | total=0.0365 cls=0.0307 proto=0.1159 acc=0.9934
+Epoch 14/20: train=0.0286 (BCE=0.0232, proto=0.1084) val_auc=0.9886 val_f1=0.9217
+  Epoch  15 | Batch   50/  55 | total=0.0083 cls=0.0036 proto=0.0946 acc=0.9931
+Epoch 15/20: train=0.0311 (BCE=0.0256, proto=0.1092) val_auc=0.9898 val_f1=0.9182
+  Epoch  16 | Batch   50/  55 | total=0.1238 cls=0.1162 proto=0.1531 acc=0.9906
+Epoch 16/20: train=0.0336 (BCE=0.0281, proto=0.1097) val_auc=0.9907 val_f1=0.9174
+  Epoch  17 | Batch   50/  55 | total=0.0836 cls=0.0776 proto=0.1206 acc=0.9906
+Epoch 17/20: train=0.0389 (BCE=0.0332, proto=0.1141) val_auc=0.9908 val_f1=0.9174
+  Epoch  18 | Batch   50/  55 | total=0.0370 cls=0.0303 proto=0.1335 acc=0.9875
+Epoch 18/20: train=0.0411 (BCE=0.0353, proto=0.1152) val_auc=0.9914 val_f1=0.9224
+  Epoch  19 | Batch   50/  55 | total=0.0885 cls=0.0823 proto=0.1235 acc=0.9853
+Epoch 19/20: train=0.0494 (BCE=0.0434, proto=0.1205) val_auc=0.9912 val_f1=0.9315
+  Epoch  20 | Batch   50/  55 | total=0.0154 cls=0.0104 proto=0.1001 acc=0.9875
+Epoch 20/20: train=0.0453 (BCE=0.0394, proto=0.1183) val_auc=0.9912 val_f1=0.9266
+Test: AUC=0.9950 F1=0.9208 Acc=0.9678
+Saved results to D:\luna16-work\runs\experiments_v2\seed_1\pbip_contrast

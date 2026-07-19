@@ -1,0 +1,16 @@
+{
+  "epochs": 20,
+  "batch_size": 64,
+  "lr": 0.001,
+  "dropout": 0.3,
+  "augment": "strong",
+  "num_workers": 4,
+  "seed": 2,
+  "trial_name": "",
+  "pretrained": true,
+  "amp": true,
+  "metadata": "D:\\luna16-work\\data\\processed\\metadata.csv",
+  "patches": "D:\\luna16-work\\data\\processed\\patches",
+  "output_dir": "D:\\luna16-work\\runs\\experiments_v2\\seed_2\\resnet18_strong",
+  "method": "resnet18_strong"
+}

@@ -1,0 +1,27 @@
+{
+  "seeds": [
+    0,
+    1,
+    2
+  ],
+  "methods": [
+    "resnet18_noaug",
+    "resnet18_strong",
+    "pbip_lite",
+    "pbip_contrast"
+  ],
+  "epochs": 20,
+  "batch_size": 64,
+  "alpha": 0.3,
+  "contrast_beta": 0.05,
+  "beta_sweep": [
+    0.05,
+    0.1
+  ],
+  "method_definitions": {
+    "resnet18_noaug": "ResNet18, no augmentation",
+    "resnet18_strong": "ResNet18, strong augmentation",
+    "pbip_lite": "class-aware prototype fusion, beta=0",
+    "pbip_contrast": "PBIP-Lite plus contrastive loss, beta=0.05"
+  }
+}

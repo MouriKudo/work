@@ -1,0 +1,7 @@
+{
+  "selection_metric": "best_val_auc",
+  "method": "resnet18_strong",
+  "seed": 1,
+  "best_val_auc": 0.9939755999193386,
+  "run_dir": "D:\\luna16-work\\runs\\experiments_v2\\seed_1\\resnet18_strong"
+}
