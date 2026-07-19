@@ -56,8 +56,32 @@ class ResNet18Binary(nn.Module):
 
 # ====================== 数据增强 ======================
 
-def get_augmentation():
-    """训练集增强: 旋转 + 翻转 + 裁剪 + 强度扰动 (torchvision)"""
+def get_augmentation(level: str = "basic"):
+    """返回 torchvision 增强 pipeline。
+
+    level:
+      - basic:   ResNet18 baseline 使用的增强
+      - strong:  更强的增强 (对比验证用)
+      - none:   无增强 (仅归一化)
+
+    原始 baseline 使用的是 basic 级别，包含:
+      旋转 (RandomRotation)、翻转 (HorizontalFlip/VerticalFlip)、
+      裁剪 (RandomResizedCrop)、强度扰动 (ColorJitter)
+    """
+    if level == "none":
+        return None
+
+    if level == "strong":
+        return T.Compose([
+            T.RandomHorizontalFlip(p=0.5),
+            T.RandomVerticalFlip(p=0.5),
+            T.RandomRotation(30),
+            T.ColorJitter(brightness=0.2, contrast=0.2, saturation=0.1),
+            T.RandomResizedCrop(64, scale=(0.7, 1.0)),
+            T.GaussianBlur(kernel_size=3, sigma=(0.1, 1.0)),
+        ])
+
+    # basic (default, used in baseline)
     return T.Compose([
         T.RandomHorizontalFlip(p=0.5),
         T.RandomVerticalFlip(p=0.5),
@@ -132,9 +156,13 @@ def main():
     parser.add_argument("--lr", type=float, default=1e-3)
     parser.add_argument("--dropout", type=float, default=0.3)
     parser.add_argument("--amp", action="store_true", default=True, help="混合精度 (默认开)")
-    parser.add_argument("--augment", action="store_true", help="开启数据增强")
+    parser.add_argument("--augment", type=str, default="none",
+                        choices=["none", "basic", "strong"],
+                        help="数据增强强度 (none/basic/strong)")
     parser.add_argument("--num_workers", type=int, default=4)
     parser.add_argument("--seed", type=int, default=42)
+    parser.add_argument("--trial_name", type=str, default="",
+                        help="实验标记，会加到 run dir 名称中")
 
     args = parser.parse_args()
 
@@ -146,7 +174,7 @@ def main():
           f"Augment: {args.augment} | Seed: {args.seed}")
 
     # --- Transforms ---
-    train_aug = get_augmentation() if args.augment else None
+    train_aug = get_augmentation(args.augment)
 
     # --- DataLoaders ---
     print("\n" + "=" * 50)
@@ -177,7 +205,9 @@ def main():
     scaler = GradScaler('cuda' if torch.cuda.is_available() else 'cpu')
 
     # --- Run dir ---
-    run_dir = PROJECT_ROOT / "runs" / f"resnet18_{datetime.datetime.now().strftime('%Y%m%d_%H%M%S')}"
+    trial_tag = f"_{args.trial_name}" if args.trial_name else ""
+    run_name = f"resnet18_aug-{args.augment}_sd{args.seed}{trial_tag}_" + datetime.datetime.now().strftime('%Y%m%d_%H%M%S')
+    run_dir = PROJECT_ROOT / "runs" / run_name
     run_dir.mkdir(parents=True, exist_ok=True)
     print(f"  Run dir: {run_dir}")
 
