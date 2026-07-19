@@ -28,6 +28,7 @@
 - [x] Dataset、DataLoader、ResNet18训练入口。
 - [x] 20 epoch ResNet18基线和增强实验。
 - [x] loss/AUC/F1、数据泄漏、标签和候选坐标审计。
+- [x] 数据审计记录：`runs/data_audit/audit_report.json`。
 - [x] 轻量SimpleCNN代码和3 epoch流程验证。
 - [x] 轻量SimpleCNN 20 epoch正式结果。
 - [x] K=3、N=20的类别原型库和原型网格图。

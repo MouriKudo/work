@@ -12,6 +12,6 @@ test_beta_sweep_parser (test_run_experiments.ExperimentRunnerTests) ... ok
 test_default_seed_matrix (test_run_experiments.ExperimentRunnerTests) ... ok
 
 ----------------------------------------------------------------------
-Ran 12 tests in 0.048s
+Ran 12 tests in 0.101s
 
 OK

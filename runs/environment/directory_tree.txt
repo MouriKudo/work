@@ -23,48 +23,25 @@ D:\luna16-work/
   runs/
     data_audit/
     environment/
-    evaluation/
-    evaluation_v2/
-    experiment_dry_run/
-    experiment_smoke_v2/
     experiments_v2/
-    final_results/
     lightweight/
-    pbip_alpha0.3_beta0.05_sd42_20260719_120132/
-    pbip_alpha0.3_beta0.1_sd42_20260719_120624/
-    pbip_v2/
-    prototype_bank/
-    prototype_bank_v2/
-    resnet18_20260717_201929/
-    resnet18_aug-basic_sd42_baseline-rerun_20260718_134340/
-    resnet18_aug-basic_sd42_basic_20260719_102942/
-    resnet18_aug-none_sd42_noaug_20260719_102942/
-    resnet18_aug-none_sd42_noaug_20260719_104236/
-    resnet18_aug-strong_sd42_strong_20260719_102942/
-    ... (3 additional entries)
+    validation/
   src/
-    __pycache__/
     coordinate_utils.py
     data_manifest.py
     download_luna16.py
     env_snapshot.py
-    evaluate.py
-    final_metrics.py
     luna16_dataset.py
     metrics.py
-    patch_extractor.py
     pbip_train.py
-    plot_training_curve.py
     plot_utils.py
     preprocess.py
     prototype_bank.py
-    run_all.py
     run_experiments.py
     split_data.py
     train.py
     train_lightweight.py
   tests/
-    __pycache__/
     test_data_integrity.py
     test_metrics.py
     test_pbip.py
