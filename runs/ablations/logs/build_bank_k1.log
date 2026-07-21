@@ -1,0 +1,4 @@
+Loading checkpoint: D:\luna16-work\runs\experiments_v2\seed_0\resnet18_strong\best_model.pth
+Reused cached features from D:\luna16-work\runs\experiments_v2\seed_0\prototype_bank\train_features.npz
+Extracted (3553, 512); negative=2637 positive=916
+Saved prototype bank and reports to D:\luna16-work\runs\ablations\prototype_bank_k1

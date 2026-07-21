@@ -18,7 +18,7 @@ import torch.optim as optim
 import torchvision.models as models
 import torchvision.transforms as T
 from PIL import Image
-from sklearn.metrics import confusion_matrix, f1_score, roc_auc_score
+from sklearn.metrics import average_precision_score, confusion_matrix, f1_score, roc_auc_score
 from torch.amp import GradScaler, autocast
 from torch.utils.data import DataLoader
 
@@ -126,6 +126,7 @@ def evaluate(
         "loss": total_loss / len(loader.dataset),
         "acc": float(cm.diagonal().sum() / cm.sum()),
         "auc": float(roc_auc_score(label_array, probability_array)),
+        "pr_auc": float(average_precision_score(label_array, probability_array)),
         "f1": float(f1_score(label_array, predictions, zero_division=0)),
         "cm": cm.tolist(),
     }
@@ -199,6 +200,7 @@ def save_training_plot(history: Dict[str, Iterable[float]], output_path: Path) -
     metrics_chart = render_line_chart(
         {
             "validation AUC": (epochs, history["val_auc"]),
+            "validation PR-AUC": (epochs, history["val_pr_auc"]),
             "validation F1": (epochs, history["val_f1"]),
         },
         "Validation metrics",
@@ -242,6 +244,7 @@ def fit_binary_model(
         "val_loss": [],
         "val_acc": [],
         "val_auc": [],
+        "val_pr_auc": [],
         "val_f1": [],
     }
     best_val_auc = float("-inf")
@@ -266,6 +269,7 @@ def fit_binary_model(
         history["val_loss"].append(validation["loss"])
         history["val_acc"].append(validation["acc"])
         history["val_auc"].append(validation["auc"])
+        history["val_pr_auc"].append(validation["pr_auc"])
         history["val_f1"].append(validation["f1"])
         print(
             f"Epoch {epoch:02d}/{epochs}: train_loss={train_loss:.4f} "

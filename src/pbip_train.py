@@ -30,7 +30,7 @@ import torch.nn.functional as F
 import torch.optim as optim
 import torchvision.models as models
 from PIL import Image
-from sklearn.metrics import confusion_matrix, f1_score, roc_auc_score
+from sklearn.metrics import average_precision_score, confusion_matrix, f1_score, roc_auc_score
 from torch.amp import GradScaler, autocast
 from torch.utils.data import DataLoader
 
@@ -42,11 +42,13 @@ from plot_utils import render_line_chart
 from train import ResNet18Binary, get_augmentation
 
 
-DEFAULT_BANK = PROJECT_ROOT / "runs" / "prototype_bank" / "prototype_bank.pkl"
+DEFAULT_BANK = (
+    PROJECT_ROOT / "runs/experiments_v2/seed_0/prototype_bank/prototype_bank.pkl"
+)
 DEFAULT_INIT_CHECKPOINT = (
     PROJECT_ROOT
     / "runs"
-    / "resnet18_aug-strong_sd42_strong_20260719_102942"
+    / "experiments_v2/seed_0/resnet18_strong"
     / "best_model.pth"
 )
 
@@ -244,6 +246,7 @@ def evaluate(
         "prototype_loss": total_proto_loss / len(loader.dataset),
         "acc": float(cm.diagonal().sum() / cm.sum()),
         "auc": float(roc_auc_score(labels_np, probabilities_np)),
+        "pr_auc": float(average_precision_score(labels_np, probabilities_np)),
         "f1": float(f1_score(labels_np, predictions, zero_division=0)),
         "cm": cm.tolist(),
     }
@@ -333,6 +336,7 @@ def save_training_plot(history: Dict[str, Iterable[float]], output_path: Path) -
     metric_chart = render_line_chart(
         {
             "validation AUC": (epochs, history["val_auc"]),
+            "validation PR-AUC": (epochs, history["val_pr_auc"]),
             "validation F1": (epochs, history["val_f1"]),
         },
         "Validation metrics",
@@ -362,6 +366,8 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--augment", choices=["none", "basic", "strong"], default="strong")
     parser.add_argument("--seed", type=int, default=42)
     parser.add_argument("--num_workers", type=int, default=4)
+    parser.add_argument("--metadata", type=Path, default=PROJECT_ROOT / "data/processed/metadata.csv")
+    parser.add_argument("--patches", type=Path, default=PROJECT_ROOT / "data/processed/patches")
     parser.add_argument("--prototype_bank", type=Path, default=DEFAULT_BANK)
     parser.add_argument("--init_checkpoint", type=Path, default=DEFAULT_INIT_CHECKPOINT)
     parser.add_argument("--output_dir", type=Path)
@@ -384,9 +390,9 @@ def main() -> None:
     )
 
     train_transform = get_augmentation(args.augment)
-    train_ds = LUNA16Dataset(split="train", transform=train_transform)
-    val_ds = LUNA16Dataset(split="val")
-    test_ds = LUNA16Dataset(split="test")
+    train_ds = LUNA16Dataset(args.metadata, args.patches, split="train", transform=train_transform)
+    val_ds = LUNA16Dataset(args.metadata, args.patches, split="val")
+    test_ds = LUNA16Dataset(args.metadata, args.patches, split="test")
     generator = torch.Generator().manual_seed(args.seed)
     loader_kwargs = {
         "batch_size": args.batch_size,
@@ -398,10 +404,16 @@ def main() -> None:
         shuffle=True,
         drop_last=True,
         generator=generator,
+        persistent_workers=args.num_workers > 0,
         **loader_kwargs,
     )
-    val_loader = DataLoader(val_ds, shuffle=False, **loader_kwargs)
-    test_loader = DataLoader(test_ds, shuffle=False, **loader_kwargs)
+    eval_loader_kwargs = {
+        "batch_size": args.batch_size,
+        "num_workers": 0,
+        "pin_memory": device.type == "cuda",
+    }
+    val_loader = DataLoader(val_ds, shuffle=False, **eval_loader_kwargs)
+    test_loader = DataLoader(test_ds, shuffle=False, **eval_loader_kwargs)
 
     model = PBIPLite(
         args.prototype_bank,
@@ -437,6 +449,8 @@ def main() -> None:
         {
             "prototype_bank": str(args.prototype_bank.resolve()),
             "init_checkpoint": str(args.init_checkpoint.resolve()),
+            "metadata": str(args.metadata.resolve()),
+            "patches": str(args.patches.resolve()),
             "output_dir": str(run_dir),
             "method": method,
         }
@@ -454,6 +468,7 @@ def main() -> None:
         "val_proto_loss": [],
         "val_acc": [],
         "val_auc": [],
+        "val_pr_auc": [],
         "val_f1": [],
     }
     best_val_auc = float("-inf")
@@ -483,6 +498,7 @@ def main() -> None:
         history["val_proto_loss"].append(validation_metrics["prototype_loss"])
         history["val_acc"].append(validation_metrics["acc"])
         history["val_auc"].append(validation_metrics["auc"])
+        history["val_pr_auc"].append(validation_metrics["pr_auc"])
         history["val_f1"].append(validation_metrics["f1"])
 
         print(

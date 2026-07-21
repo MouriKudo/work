@@ -1,0 +1,37 @@
+{
+  "epochs": 20,
+  "batch_size": 64,
+  "num_workers": 4,
+  "seed": 0,
+  "lr": 0.0001,
+  "weight_decay": 0.0001,
+  "alpha": 0.3,
+  "beta": 0.05,
+  "top_k": 20,
+  "prototype_temperature": 0.2,
+  "dropout": 0.3,
+  "spatial_augment": "strong",
+  "amp": true,
+  "prototype_bank": "D:\\luna16-work\\runs\\experiments_v2\\seed_0\\prototype_bank\\prototype_bank.pkl",
+  "init_checkpoint": "D:\\luna16-work\\runs\\experiments_v2\\seed_0\\resnet18_strong\\best_model.pth",
+  "output_dir": "D:\\luna16-work\\runs\\robust_pbip\\seed_0",
+  "degradation_config": "D:\\luna16-work\\src\\configs\\degradation.yaml",
+  "robust_augmentation": {
+    "clean_probability": 0.35,
+    "levels": [
+      1,
+      2,
+      3,
+      4
+    ],
+    "types": [
+      "low_contrast",
+      "gaussian_noise",
+      "gaussian_blur",
+      "window_shift",
+      "jpeg",
+      "resample"
+    ]
+  },
+  "method": "robust_pbip"
+}

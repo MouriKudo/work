@@ -1,8 +1,11 @@
 # Data files (large) — ignore raw CT scans, keep small CSVs
 data/raw/subset*.zip
+deliverables/*.zip
 data/raw/subset*/
 data/raw/candidates.csv
 data/processed/patches/*.npy
+data/external/
+data/processed/lidc_external_patches/*.npy
 
 # Python
 __pycache__/
@@ -25,6 +28,8 @@ runs/**/*.pth
 runs/**/predictions/
 *.log
 !runs/experiments_v2/**/*.log
+!runs/ablations/logs/*.log
+!runs/robust_pbip/**/*.log
 
 # Local flow-validation runs; formal experiment outputs live in experiments_v2.
 runs/experiment_smoke_v2/

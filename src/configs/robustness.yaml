@@ -1,0 +1,18 @@
+runs_root: runs/experiments_v2
+metadata: data/processed/metadata.csv
+patches: data/processed/patches
+degradation_config: src/configs/degradation.yaml
+output_dir: runs/robustness
+figure_dir: paper_figs
+batch_size: 256
+num_workers: 0
+seed: 2026
+
+# 每种方法只按验证 AUC 从 seed 0/1/2 中选代表模型，测试结果不参与模型选择。
+selection_metric: best_val_auc
+methods:
+  - resnet18_baseline
+  - resnet18_augmented
+  - pbip_lite
+  - pbip_full
+levels: [1, 2, 3, 4, 5]

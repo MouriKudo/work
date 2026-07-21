@@ -1,0 +1,12 @@
+{
+  "method": "pbip_full",
+  "seed": 1,
+  "run_dir": "D:\\luna16-work\\runs\\experiments_v2\\seed_1\\pbip_contrast",
+  "checkpoint": "D:\\luna16-work\\runs\\experiments_v2\\seed_1\\pbip_contrast\\best_model.pth",
+  "prototype_bank": "D:\\luna16-work\\runs\\experiments_v2\\seed_1\\prototype_bank\\prototype_bank.pkl",
+  "train_samples": 3553,
+  "test_samples": 497,
+  "feature_dimension": 512,
+  "normalization": "L2",
+  "similarity": "cosine"
+}

@@ -1,0 +1,9 @@
+{
+  "status": "DATA_NOT_PRESENT",
+  "dicom_series": 0,
+  "xml_files": 0,
+  "reader_nodule_annotations": 0,
+  "luna_seriesuids": 888,
+  "overlap_series": 0,
+  "non_overlap_series": 0
+}

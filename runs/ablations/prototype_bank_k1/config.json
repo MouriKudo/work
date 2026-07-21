@@ -1,0 +1,15 @@
+{
+  "checkpoint": "D:\\luna16-work\\runs\\experiments_v2\\seed_0\\resnet18_strong\\best_model.pth",
+  "checkpoint_sha256": "43b93fad69132064781c7aabb5b5ced3fd83135d77d62fc4108dc415574f21a6",
+  "checkpoint_epoch": 19,
+  "metadata": "D:\\luna16-work\\data\\processed\\metadata.csv",
+  "patches": "D:\\luna16-work\\data\\processed\\patches",
+  "k": 1,
+  "n": 20,
+  "seed": 0,
+  "feature_file": "D:\\luna16-work\\runs\\experiments_v2\\seed_0\\prototype_bank\\train_features.npz",
+  "feature_shape": [
+    3553,
+    512
+  ]
+}

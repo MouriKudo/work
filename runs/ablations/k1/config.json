@@ -1,0 +1,18 @@
+{
+  "epochs": 20,
+  "batch_size": 64,
+  "alpha": 0.3,
+  "beta": 0.05,
+  "prototype_temperature": 0.2,
+  "top_k": 20,
+  "lr": 0.0001,
+  "dropout": 0.3,
+  "augment": "strong",
+  "seed": 0,
+  "num_workers": 4,
+  "prototype_bank": "D:\\luna16-work\\runs\\ablations\\prototype_bank_k1\\prototype_bank.pkl",
+  "init_checkpoint": "D:\\luna16-work\\runs\\experiments_v2\\seed_0\\resnet18_strong\\best_model.pth",
+  "output_dir": "D:\\luna16-work\\runs\\ablations\\k1",
+  "amp": true,
+  "method": "pbip_contrast"
+}

@@ -1,0 +1,65 @@
+[
+  {
+    "name": "no_prototype_logits",
+    "group": "component",
+    "bank": "k3",
+    "run_dir": "D:\\luna16-work\\runs\\ablations\\no_prototype_logits",
+    "reused": false
+  },
+  {
+    "name": "no_contrastive_loss",
+    "group": "component",
+    "bank": "k3",
+    "run_dir": "D:\\luna16-work\\runs\\experiments_v2\\seed_0\\pbip_lite",
+    "reused": true
+  },
+  {
+    "name": "k1",
+    "group": "k",
+    "bank": "k1",
+    "run_dir": "D:\\luna16-work\\runs\\ablations\\k1",
+    "reused": false
+  },
+  {
+    "name": "k3",
+    "group": "k",
+    "bank": "k3",
+    "run_dir": "D:\\luna16-work\\runs\\experiments_v2\\seed_0\\pbip_contrast",
+    "reused": true
+  },
+  {
+    "name": "k5",
+    "group": "k",
+    "bank": "k5",
+    "run_dir": "D:\\luna16-work\\runs\\ablations\\k5",
+    "reused": false
+  },
+  {
+    "name": "beta_0.01",
+    "group": "beta",
+    "bank": "k3",
+    "run_dir": "D:\\luna16-work\\runs\\ablations\\beta_0.01",
+    "reused": false
+  },
+  {
+    "name": "beta_0.05",
+    "group": "beta",
+    "bank": "k3",
+    "run_dir": "D:\\luna16-work\\runs\\experiments_v2\\seed_0\\pbip_contrast",
+    "reused": true
+  },
+  {
+    "name": "beta_0.1",
+    "group": "beta",
+    "bank": "k3",
+    "run_dir": "D:\\luna16-work\\runs\\experiments_v2\\beta_sweep\\seed_0\\beta_0.1",
+    "reused": true
+  },
+  {
+    "name": "beta_0.2",
+    "group": "beta",
+    "bank": "k3",
+    "run_dir": "D:\\luna16-work\\runs\\ablations\\beta_0.2",
+    "reused": false
+  }
+]

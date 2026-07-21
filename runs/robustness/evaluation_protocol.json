@@ -1,0 +1,6 @@
+{
+  "model_selection": "highest validation AUC among seeds 0/1/2",
+  "threshold": "selected once on clean validation and fixed for all degradations",
+  "aggregation": "unweighted mean across six degradation types at each level",
+  "scope": "sampled-candidate test patches"
+}

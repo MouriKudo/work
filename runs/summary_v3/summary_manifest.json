@@ -1,0 +1,11 @@
+{
+  "selection": "F1 thresholds selected on validation only",
+  "evaluation_scope": "sampled candidate patches",
+  "rows": 12,
+  "methods": [
+    "pbip_full",
+    "pbip_lite",
+    "resnet18_augmented",
+    "resnet18_baseline"
+  ]
+}

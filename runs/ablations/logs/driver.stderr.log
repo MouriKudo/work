@@ -1,0 +1,10 @@
+Traceback (most recent call last):
+  File "D:\luna16-work\src\run_ablations.py", line 203, in <module>
+    main()
+  File "D:\luna16-work\src\run_ablations.py", line 177, in main
+    bank_cache[bank_key] = ensure_bank(
+  File "D:\luna16-work\src\run_ablations.py", line 97, in ensure_bank
+    stream_command(command, logs_dir / f"build_bank_{key}.log", dry_run)
+  File "D:\luna16-work\src\run_ablations.py", line 48, in stream_command
+    raise subprocess.CalledProcessError(return_code, command)
+subprocess.CalledProcessError: Command '['D:\\luna16-work\\.venv\\Scripts\\python.exe', 'D:\\luna16-work\\src\\prototype_bank.py', '--checkpoint', 'D:\\luna16-work\\runs\\experiments_v2\\seed_0\\resnet18_strong\\best_model.pth', '--output_dir', 'D:\\luna16-work\\runs\\ablations\\prototype_bank_k1', '--metadata', 'D:\\luna16-work\\data\\processed\\metadata.csv', '--patches', 'D:\\luna16-work\\data\\processed\\patches', '--k', '1', '--n', '20', '--seed', '0', '--batch_size', '64', '--num_workers', '4', '--feature_file', 'D:\\luna16-work\\runs\\experiments_v2\\seed_0\\prototype_bank\\train_features.npz']' returned non-zero exit status 1.

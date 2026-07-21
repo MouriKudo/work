@@ -1,0 +1,5 @@
+method,seed,best_val_auc,threshold,validation_f1,run_dir
+resnet18_baseline,1,0.9888334341601129,0.009901265613734722,0.9244444444444444,D:\luna16-work\runs\experiments_v2\seed_1\resnet18_noaug
+resnet18_augmented,1,0.9939755999193386,0.22028842568397522,0.9385964912280702,D:\luna16-work\runs\experiments_v2\seed_1\resnet18_strong
+pbip_lite,1,0.9931941923774955,0.6191728711128235,0.9454545454545454,D:\luna16-work\runs\experiments_v2\seed_1\pbip_lite
+pbip_full,1,0.992967332123412,0.618535578250885,0.9454545454545454,D:\luna16-work\runs\experiments_v2\seed_1\pbip_contrast

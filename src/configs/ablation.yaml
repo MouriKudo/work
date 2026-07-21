@@ -1,0 +1,81 @@
+project_root: ../..
+python: .venv/Scripts/python.exe
+metadata: data/processed/metadata.csv
+patches: data/processed/patches
+output_root: runs/ablations
+logs_dir: runs/ablations/logs
+
+defaults:
+  epochs: 20
+  batch_size: 64
+  alpha: 0.3
+  beta: 0.05
+  prototype_temperature: 0.2
+  top_k: 20
+  lr: 0.0001
+  dropout: 0.3
+  augment: strong
+  seed: 0
+  num_workers: 4
+  amp: true
+  init_checkpoint: runs/experiments_v2/seed_0/resnet18_strong/best_model.pth
+
+prototype_banks:
+  k1:
+    k: 1
+    n: 20
+    output_dir: runs/ablations/prototype_bank_k1
+    feature_file: runs/experiments_v2/seed_0/prototype_bank/train_features.npz
+  k3:
+    k: 3
+    n: 20
+    reuse_bank: runs/experiments_v2/seed_0/prototype_bank/prototype_bank.pkl
+  k5:
+    k: 5
+    n: 20
+    output_dir: runs/ablations/prototype_bank_k5
+    feature_file: runs/experiments_v2/seed_0/prototype_bank/train_features.npz
+
+# reuse_run 表示正式实验已经存在，批处理不会重复训练。
+experiments:
+  - name: no_prototype_logits
+    group: component
+    bank: k3
+    alpha: 0.0
+    beta: 0.05
+  - name: no_contrastive_loss
+    group: component
+    bank: k3
+    beta: 0.0
+    reuse_run: runs/experiments_v2/seed_0/pbip_lite
+  - name: k1
+    group: k
+    bank: k1
+    alpha: 0.3
+    beta: 0.05
+  - name: k3
+    group: k
+    bank: k3
+    reuse_run: runs/experiments_v2/seed_0/pbip_contrast
+  - name: k5
+    group: k
+    bank: k5
+    alpha: 0.3
+    beta: 0.05
+  - name: beta_0.01
+    group: beta
+    bank: k3
+    beta: 0.01
+  - name: beta_0.05
+    group: beta
+    bank: k3
+    reuse_run: runs/experiments_v2/seed_0/pbip_contrast
+  - name: beta_0.1
+    group: beta
+    bank: k3
+    beta: 0.1
+    reuse_run: runs/experiments_v2/beta_sweep/seed_0/beta_0.1
+  - name: beta_0.2
+    group: beta
+    bank: k3
+    beta: 0.2

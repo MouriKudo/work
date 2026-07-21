@@ -1,0 +1,15 @@
+{
+  "threshold_policy": "selected on clean validation only",
+  "scope": "sampled candidate classification",
+  "completed": [
+    "no_prototype_logits",
+    "no_contrastive_loss",
+    "k1",
+    "k3",
+    "k5",
+    "beta_0.01",
+    "beta_0.05",
+    "beta_0.1",
+    "beta_0.2"
+  ]
+}

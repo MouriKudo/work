@@ -1,0 +1,54 @@
+# 输入 patch 已按 LUNA16 肺窗 WW=1500、WL=-600 归一化到 [0, 1]。
+source_window:
+  width: 1500.0
+  level: -600.0
+
+# 5 档由轻到重的退化强度；level=0 在评估脚本中表示干净样本。
+levels:
+  low_contrast:
+    - {factor: 0.90}
+    - {factor: 0.75}
+    - {factor: 0.60}
+    - {factor: 0.45}
+    - {factor: 0.30}
+  gaussian_noise:
+    - {sigma: 0.01}
+    - {sigma: 0.025}
+    - {sigma: 0.05}
+    - {sigma: 0.075}
+    - {sigma: 0.10}
+  gaussian_blur:
+    - {kernel_size: 3, sigma: 0.5}
+    - {kernel_size: 3, sigma: 1.0}
+    - {kernel_size: 5, sigma: 1.2}
+    - {kernel_size: 7, sigma: 1.6}
+    - {kernel_size: 9, sigma: 2.0}
+  window_shift:
+    - {ww_offset: 100.0, wl_offset: 25.0}
+    - {ww_offset: 200.0, wl_offset: 50.0}
+    - {ww_offset: 350.0, wl_offset: 100.0}
+    - {ww_offset: 500.0, wl_offset: 150.0}
+    - {ww_offset: 700.0, wl_offset: 250.0}
+  jpeg:
+    - {quality: 90}
+    - {quality: 75}
+    - {quality: 55}
+    - {quality: 35}
+    - {quality: 15}
+  resample:
+    - {scale: 0.85}
+    - {scale: 0.70}
+    - {scale: 0.55}
+    - {scale: 0.40}
+    - {scale: 0.25}
+
+robust_training:
+  clean_probability: 0.35
+  degradation_types:
+    - low_contrast
+    - gaussian_noise
+    - gaussian_blur
+    - window_shift
+    - jpeg
+    - resample
+  allowed_levels: [1, 2, 3, 4]

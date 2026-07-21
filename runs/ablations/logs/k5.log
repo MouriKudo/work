@@ -1,0 +1,47 @@
+Device=cuda epochs=20 alpha=0.3 beta=0.05 augment=strong seed=0
+LUNA16Dataset (split=train): 3553 samples | pos=916 (25.8%) | neg=2637 (74.2%)
+LUNA16Dataset (split=val): 462 samples | pos=114 (24.7%) | neg=348 (75.3%)
+LUNA16Dataset (split=test): 497 samples | pos=98 (19.7%) | neg=399 (80.3%)
+Loaded 200 prototypes and initialized from D:\luna16-work\runs\experiments_v2\seed_0\resnet18_strong\best_model.pth (epoch=19)
+  Epoch   1 | Batch   50/  55 | total=0.0731 cls=0.0602 proto=0.2580 acc=0.9775
+Epoch 01/20: train=0.0818 (BCE=0.0683, proto=0.2708) val_auc=0.9874 val_f1=0.9174
+  Epoch   2 | Batch   50/  55 | total=0.1276 cls=0.1138 proto=0.2761 acc=0.9753
+Epoch 02/20: train=0.0880 (BCE=0.0750, proto=0.2597) val_auc=0.9867 val_f1=0.9058
+  Epoch   3 | Batch   50/  55 | total=0.0485 cls=0.0361 proto=0.2476 acc=0.9784
+Epoch 03/20: train=0.0714 (BCE=0.0590, proto=0.2475) val_auc=0.9922 val_f1=0.9108
+  Epoch   4 | Batch   50/  55 | total=0.0269 cls=0.0163 proto=0.2128 acc=0.9797
+Epoch 04/20: train=0.0768 (BCE=0.0646, proto=0.2450) val_auc=0.9881 val_f1=0.9132
+  Epoch   5 | Batch   50/  55 | total=0.0457 cls=0.0346 proto=0.2208 acc=0.9822
+Epoch 05/20: train=0.0783 (BCE=0.0662, proto=0.2414) val_auc=0.9927 val_f1=0.9124
+  Epoch   6 | Batch   50/  55 | total=0.0731 cls=0.0604 proto=0.2549 acc=0.9753
+Epoch 06/20: train=0.0769 (BCE=0.0649, proto=0.2412) val_auc=0.9896 val_f1=0.9100
+  Epoch   7 | Batch   50/  55 | total=0.0578 cls=0.0463 proto=0.2315 acc=0.9828
+Epoch 07/20: train=0.0617 (BCE=0.0501, proto=0.2302) val_auc=0.9920 val_f1=0.9167
+  Epoch   8 | Batch   50/  55 | total=0.0710 cls=0.0590 proto=0.2397 acc=0.9794
+Epoch 08/20: train=0.0699 (BCE=0.0583, proto=0.2325) val_auc=0.9891 val_f1=0.9132
+  Epoch   9 | Batch   50/  55 | total=0.0701 cls=0.0589 proto=0.2235 acc=0.9844
+Epoch 09/20: train=0.0571 (BCE=0.0458, proto=0.2260) val_auc=0.9897 val_f1=0.9048
+  Epoch  10 | Batch   50/  55 | total=0.0225 cls=0.0116 proto=0.2185 acc=0.9825
+Epoch 10/20: train=0.0644 (BCE=0.0531, proto=0.2274) val_auc=0.9919 val_f1=0.9159
+  Epoch  11 | Batch   50/  55 | total=0.0837 cls=0.0708 proto=0.2588 acc=0.9847
+Epoch 11/20: train=0.0552 (BCE=0.0440, proto=0.2239) val_auc=0.9920 val_f1=0.9108
+  Epoch  12 | Batch   50/  55 | total=0.0530 cls=0.0418 proto=0.2244 acc=0.9834
+Epoch 12/20: train=0.0562 (BCE=0.0450, proto=0.2242) val_auc=0.9927 val_f1=0.9023
+  Epoch  13 | Batch   50/  55 | total=0.0331 cls=0.0224 proto=0.2145 acc=0.9838
+Epoch 13/20: train=0.0583 (BCE=0.0471, proto=0.2238) val_auc=0.9924 val_f1=0.9005
+  Epoch  14 | Batch   50/  55 | total=0.0762 cls=0.0649 proto=0.2257 acc=0.9822
+Epoch 14/20: train=0.0592 (BCE=0.0481, proto=0.2225) val_auc=0.9936 val_f1=0.9266
+  Epoch  15 | Batch   50/  55 | total=0.0651 cls=0.0527 proto=0.2478 acc=0.9850
+Epoch 15/20: train=0.0607 (BCE=0.0495, proto=0.2245) val_auc=0.9926 val_f1=0.9167
+  Epoch  16 | Batch   50/  55 | total=0.0366 cls=0.0262 proto=0.2079 acc=0.9859
+Epoch 16/20: train=0.0524 (BCE=0.0414, proto=0.2199) val_auc=0.9923 val_f1=0.9116
+  Epoch  17 | Batch   50/  55 | total=0.1003 cls=0.0879 proto=0.2473 acc=0.9881
+Epoch 17/20: train=0.0492 (BCE=0.0382, proto=0.2191) val_auc=0.9934 val_f1=0.9217
+  Epoch  18 | Batch   50/  55 | total=0.0955 cls=0.0837 proto=0.2363 acc=0.9866
+Epoch 18/20: train=0.0491 (BCE=0.0381, proto=0.2202) val_auc=0.9931 val_f1=0.9124
+  Epoch  19 | Batch   50/  55 | total=0.0905 cls=0.0788 proto=0.2325 acc=0.9888
+Epoch 19/20: train=0.0489 (BCE=0.0380, proto=0.2186) val_auc=0.9928 val_f1=0.9159
+  Epoch  20 | Batch   50/  55 | total=0.0220 cls=0.0112 proto=0.2157 acc=0.9891
+Epoch 20/20: train=0.0480 (BCE=0.0371, proto=0.2181) val_auc=0.9928 val_f1=0.9159
+Test: AUC=0.9951 F1=0.9490 Acc=0.9799
+Saved results to D:\luna16-work\runs\ablations\k5

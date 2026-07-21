@@ -27,7 +27,7 @@ from train import ResNet18Binary
 DEFAULT_CHECKPOINT = (
     PROJECT_ROOT
     / "runs"
-    / "resnet18_aug-strong_sd42_strong_20260719_102942"
+    / "experiments_v2/seed_0/resnet18_strong"
     / "best_model.pth"
 )
 
@@ -232,6 +232,11 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--seed", type=int, default=42)
     parser.add_argument("--batch_size", type=int, default=256)
     parser.add_argument("--num_workers", type=int, default=0)
+    parser.add_argument(
+        "--feature_file",
+        type=Path,
+        help="复用已有 train_features.npz，避免为不同 K 重复提取特征",
+    )
     return parser.parse_args()
 
 
@@ -243,11 +248,31 @@ def main() -> None:
     output_dir = args.output_dir.resolve()
     output_dir.mkdir(parents=True, exist_ok=True)
     print(f"Loading checkpoint: {args.checkpoint}")
-    model, checkpoint_epoch = load_feature_model(args.checkpoint, device)
-    dataset = LUNA16Dataset(args.metadata, args.patches, split="train")
-    features, labels, seriesuids, patch_files = extract_features(
-        model, dataset, device, args.batch_size, args.num_workers
-    )
+    if args.feature_file is not None:
+        checkpoint = torch.load(
+            str(args.checkpoint), map_location="cpu", weights_only=False
+        )
+        checkpoint_epoch = int(checkpoint.get("epoch", -1))
+        # 旧版项目自产 NPZ 将字符串保存为 object；兼容读取后立即转成 Unicode。
+        # --feature_file 应仅指向本项目可信的 train_features.npz。
+        with np.load(args.feature_file, allow_pickle=True) as cached:
+            required = {"features", "labels", "seriesuids", "patch_files"}
+            missing = required - set(cached.files)
+            if missing:
+                raise ValueError(f"feature file is missing keys: {sorted(missing)}")
+            features = np.asarray(cached["features"], dtype=np.float32)
+            labels = np.asarray(cached["labels"], dtype=np.int64)
+            seriesuids = np.asarray(cached["seriesuids"], dtype=str)
+            patch_files = np.asarray(cached["patch_files"], dtype=str)
+        if not (len(features) == len(labels) == len(seriesuids) == len(patch_files)):
+            raise ValueError("cached feature arrays have inconsistent lengths")
+        print(f"Reused cached features from {args.feature_file}")
+    else:
+        model, checkpoint_epoch = load_feature_model(args.checkpoint, device)
+        dataset = LUNA16Dataset(args.metadata, args.patches, split="train")
+        features, labels, seriesuids, patch_files = extract_features(
+            model, dataset, device, args.batch_size, args.num_workers
+        )
     print(
         f"Extracted {features.shape}; negative={(labels == 0).sum()} "
         f"positive={(labels == 1).sum()}"
@@ -269,8 +294,8 @@ def main() -> None:
         output_dir / "train_features.npz",
         features=features,
         labels=labels,
-        seriesuids=seriesuids,
-        patch_files=patch_files,
+        seriesuids=np.asarray(seriesuids, dtype=str),
+        patch_files=np.asarray(patch_files, dtype=str),
     )
     pd.DataFrame(bank["cluster_stats"]).to_csv(
         output_dir / "cluster_stats.csv", index=False
@@ -285,6 +310,7 @@ def main() -> None:
         "k": args.k,
         "n": args.n,
         "seed": args.seed,
+        "feature_file": str(args.feature_file.resolve()) if args.feature_file else None,
         "feature_shape": list(features.shape),
     }
     (output_dir / "config.json").write_text(
