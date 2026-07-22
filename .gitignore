@@ -1,6 +1,7 @@
 # Data files (large) — ignore raw CT scans, keep small CSVs
 data/raw/subset*.zip
 deliverables/*.zip
+!deliverables/肺结节分类项目最终成果包.zip
 data/raw/subset*/
 data/raw/candidates.csv
 data/processed/patches/*.npy
