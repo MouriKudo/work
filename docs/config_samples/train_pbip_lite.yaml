@@ -1,0 +1,106 @@
+# PBIP-Lite / 类别感知原型对比版本的训练配置样本。
+# 该文件作为方法文档中的统一配置契约；字段值与正式实验保持一致。
+schema_version: 1
+
+project:
+  name: lung_nodule_pbip_lite
+  task: sampled_candidate_binary_classification
+  output_root: runs/experiments_v2
+
+data:
+  raw_dir: data/raw
+  candidates_csv: data/raw/candidates.csv
+  annotations_csv: data/raw/annotations.csv
+  metadata_csv: data/processed/metadata.csv
+  patches_dir: data/processed/patches
+  image_format: mhd
+  patch_shape: [3, 64, 64]
+  preprocessing:
+    reader: SimpleITK
+    window_width_hu: 1500.0
+    window_level_hu: -600.0
+    positive_match_tolerance_mm: 5.0
+    negative_to_positive_ratio: 3.0
+    negative_sampling: random
+    negative_sampling_seed: 42
+  split:
+    unit: seriesuid
+    train_subsets: [0, 1, 2, 3, 4, 5, 6, 7]
+    validation_subsets: [8]
+    test_subsets: [9]
+
+model:
+  backbone: resnet18
+  input_channels: 3
+  conv1_kernel_size: 3
+  conv1_stride: 1
+  remove_initial_maxpool: true
+  feature_dim: 512
+  dropout: 0.3
+  pretrained_backbone: imagenet1k_v1
+  initialization_checkpoint_pattern: >-
+    runs/experiments_v2/seed_{seed}/resnet18_strong/best_model.pth
+
+prototype_bank:
+  build_from_split: train
+  source_checkpoint_pattern: >-
+    runs/experiments_v2/seed_{seed}/resnet18_strong/best_model.pth
+  output_pattern: >-
+    runs/experiments_v2/seed_{seed}/prototype_bank/prototype_bank.pkl
+  distance: cosine
+  clustering: spherical_kmeans
+  clusters_per_class: 3
+  representatives_per_cluster: 20
+  kmeans_max_iterations: 100
+  inference_top_k_per_class: 20
+  temperature: 0.2
+
+fusion:
+  alpha: 0.3
+  rule: convex_logit_fusion
+
+loss:
+  classification: BCEWithLogitsLoss
+  prototype: class_aware_prototype_cross_entropy
+  # 0.0 对应工程中的 pbip_lite；0.05 对应 pbip_contrast/pbip_full。
+  prototype_weight_beta: 0.05
+
+augmentation:
+  preset: strong
+  horizontal_flip_probability: 0.5
+  vertical_flip_probability: 0.5
+  rotation_degrees: 30
+  brightness_jitter: 0.2
+  contrast_jitter: 0.2
+  saturation_jitter: 0.1
+  resized_crop_scale: [0.7, 1.0]
+  gaussian_blur_kernel_size: 3
+  gaussian_blur_sigma: [0.1, 1.0]
+
+optimization:
+  epochs: 20
+  batch_size: 64
+  optimizer: AdamW
+  learning_rate: 0.0001
+  weight_decay: 0.0001
+  scheduler: CosineAnnealingLR
+  scheduler_t_max: 20
+  mixed_precision: true
+  num_workers: 4
+  drop_last_train_batch: true
+  checkpoint_selection_metric: validation_auc
+  checkpoint_selection_mode: max
+
+reproducibility:
+  seeds: [0, 1, 2]
+  deterministic_dataloader_generator: true
+
+evaluation:
+  probability: sigmoid
+  threshold_selection_split: validation
+  threshold_objective: maximum_f1
+  report_metrics: [accuracy, precision, recall, f1, auc, pr_auc]
+  bootstrap_iterations: 1000
+  confidence_level: 0.95
+  bootstrap_cluster: seriesuid
+

@@ -1,20 +1,26 @@
-# CUDA 13.0 wheels are resolved from the official PyTorch package index.
+# Python 3.10；下列版本已在本项目的一键冒烟测试中验证。
+# CUDA 13.0 wheel 从 PyTorch 官方包索引解析。
 --extra-index-url https://download.pytorch.org/whl/cu130
 
-# Deep learning
+# 深度学习
 torch==2.11.0+cu130
 torchvision==0.26.0+cu130
 tensorboard==2.21.0
 
-# Medical imaging and computer vision
+# 医学影像与图像处理
 SimpleITK==2.5.5
-opencv-python==5.0.0
+opencv-python==4.12.0.88
 Pillow==12.2.0
 
-# Scientific computing and evaluation
+# 科学计算、统计与评估
 numpy==2.2.6
 pandas==2.3.3
 scipy==1.15.3
 scikit-learn==1.7.2
+statsmodels==0.14.6
+patsy==1.0.2
+
+# 配置、绘图与文档
 matplotlib==3.10.9
 PyYAML==6.0.2
+python-docx==1.2.0

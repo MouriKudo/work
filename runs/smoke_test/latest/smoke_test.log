@@ -1,0 +1,8 @@
+2026-07-22 18:09:03 | INFO | 开始一键冒烟测试，输出目录：D:\luna16-work\runs\smoke_test\latest
+2026-07-22 18:09:03 | INFO | 设备：cuda；checkpoint：D:\luna16-work\runs\experiments_v2\seed_1\pbip_contrast\best_model.pth
+2026-07-22 18:09:03 | INFO | PASS | 加载 | 0.110s | val=32, test=32, mhd_check=True
+2026-07-22 18:09:05 | INFO | PASS | 推理 | 1.950s | model=pbip, threshold=0.201779, validation_f1=0.9697
+2026-07-22 18:09:05 | INFO | PASS | 评估 | 0.014s | AUC=0.9961, F1=0.9375, Acc=0.9375
+2026-07-22 18:09:06 | INFO | PASS | 统计 | 0.830s | CT 簇 Bootstrap=200, confidence=0.95
+2026-07-22 18:09:06 | INFO | PASS | 绘图 | 0.024s | smoke_dashboard.png, 300 DPI
+2026-07-22 18:09:06 | INFO | 冒烟测试完成：PASS；总耗时 2.956s

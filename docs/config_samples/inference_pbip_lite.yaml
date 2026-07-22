@@ -1,0 +1,54 @@
+# PBIP-Lite 固定测试/外部测试推理配置样本。
+# 阈值只能来自验证集或已保存的阈值文件，禁止在测试集重新调参。
+schema_version: 1
+
+model:
+  type: pbip
+  method: pbip_contrast
+  seed: 0
+  checkpoint: runs/experiments_v2/seed_0/pbip_contrast/best_model.pth
+  prototype_bank: runs/experiments_v2/seed_0/prototype_bank/prototype_bank.pkl
+  alpha: 0.3
+  top_k: 20
+  prototype_temperature: 0.2
+  dropout: 0.3
+
+input:
+  dataset_priority: [lidc_idri, luna16_fixed_test]
+  metadata_csv: data/processed/metadata.csv
+  patches_dir: data/processed/patches
+  image_format: mhd
+  patch_shape: [3, 64, 64]
+  window_width_hu: 1500.0
+  window_level_hu: -600.0
+
+external_validation:
+  require_binary_labels: true
+  require_patient_or_scan_deduplication: true
+  fallback_when_lidc_invalid: luna16_fixed_test
+  fallback_split: test
+
+runtime:
+  device: auto
+  batch_size: 256
+  num_workers: 0
+  mixed_precision: false
+
+decision:
+  threshold_source: validation_maximum_f1
+  threshold_file: runs/experiments_v2/best_evaluation/best_threshold.json
+  allow_test_threshold_tuning: false
+
+statistics:
+  metrics: [accuracy, precision, recall, f1, auc, pr_auc]
+  bootstrap_iterations: 1000
+  confidence_level: 0.95
+  bootstrap_unit: seriesuid
+  random_seed: 42
+
+output:
+  directory: runs/external_test
+  predictions_csv: predictions.csv
+  metrics_csv: metrics_with_ci.csv
+  source_manifest_json: data_source_manifest.json
+

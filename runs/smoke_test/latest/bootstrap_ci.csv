@@ -1,0 +1,6 @@
+metric,value,ci_lower,ci_upper,confidence_level,bootstrap_iterations,bootstrap_valid,bootstrap_attempts,resample_unit
+accuracy,0.9375,0.8180397727272728,1.0,0.95,200,200,200,seriesuid
+precision,0.9375,0.7857142857142857,1.0,0.95,200,200,200,seriesuid
+recall,0.9375,0.8119243421052632,1.0,0.95,200,200,200,seriesuid
+f1,0.9375,0.8233115468409586,1.0,0.95,200,200,200,seriesuid
+auc,0.99609375,0.9686181139122315,1.0,0.95,200,200,200,seriesuid

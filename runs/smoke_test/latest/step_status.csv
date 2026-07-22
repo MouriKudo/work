@@ -1,0 +1,6 @@
+step,status,elapsed_seconds,detail
+加载,PASS,0.1104,"val=32, test=32, mhd_check=True"
+推理,PASS,1.9504,"model=pbip, threshold=0.201779, validation_f1=0.9697"
+评估,PASS,0.0139,"AUC=0.9961, F1=0.9375, Acc=0.9375"
+统计,PASS,0.8295,"CT 簇 Bootstrap=200, confidence=0.95"
+绘图,PASS,0.0245,"smoke_dashboard.png, 300 DPI"

@@ -1,0 +1,92 @@
+{
+  "selected_source": {
+    "name": "luna16_fixed_test",
+    "metadata": "D:\\luna16-work\\data\\processed\\metadata.csv",
+    "patches": "D:\\luna16-work\\data\\processed\\patches",
+    "split": "test",
+    "origin_format": "MHD（已提取 3×64×64 NPY patch）"
+  },
+  "source_audit": {
+    "requested_mode": "auto",
+    "lidc": {
+      "ready": false,
+      "reasons": [
+        "LIDC-IDRI 不满足二分类评估要求，实际类别=[1]，必须同时包含 0/1",
+        "LIDC-IDRI 仅有 1 个 CT，无法执行 CT 簇 Bootstrap"
+      ],
+      "summary": {
+        "rows": 12,
+        "series": 1,
+        "positive": 12,
+        "negative": 0,
+        "classes": [
+          1
+        ],
+        "missing_patches": 0,
+        "duplicated_patch_files": 0,
+        "luna16_overlap_series": 0
+      },
+      "deduplication": {
+        "status": "SAMPLE_EXTRACTION_COMPLETE",
+        "dicom_series": 1,
+        "xml_files": 1319,
+        "xml_unique_series": 1294,
+        "xml_duplicate_files": 25,
+        "reader_nodule_annotations": 20096,
+        "luna_seriesuids": 888,
+        "overlap_series": 0,
+        "non_overlap_series": 1,
+        "eligible_annotated_series": 1,
+        "extracted_patches": 12,
+        "failed_patches": 0,
+        "sop_aligned_patches": 12,
+        "world_z_fallback_patches": 0
+      }
+    },
+    "luna16": {
+      "ready": true,
+      "reasons": [],
+      "summary": {
+        "rows": 497,
+        "series": 87,
+        "positive": 98,
+        "negative": 399,
+        "classes": [
+          0,
+          1
+        ],
+        "missing_patches": 0,
+        "duplicated_patch_files": 0
+      }
+    },
+    "fallback_used": true,
+    "fallback_reasons": [
+      "LIDC-IDRI 不满足二分类评估要求，实际类别=[1]，必须同时包含 0/1",
+      "LIDC-IDRI 仅有 1 个 CT，无法执行 CT 簇 Bootstrap"
+    ]
+  },
+  "threshold_protocol": "每个模型仅在 LUNA16 validation split 最大化 F1",
+  "evaluation_protocol": "候选级二分类；按 seriesuid 执行 CT 簇 Bootstrap",
+  "methods": [
+    "resnet18_augmented",
+    "pbip_lite"
+  ],
+  "seeds": [
+    0,
+    1,
+    2
+  ],
+  "device": "cuda",
+  "bootstrap": {
+    "iterations": 1000,
+    "confidence_level": 0.95,
+    "random_seed": 42,
+    "resample_unit": "seriesuid"
+  },
+  "evaluated_candidates": 497,
+  "evaluated_series": 87,
+  "class_counts": {
+    "0": 399,
+    "1": 98
+  }
+}

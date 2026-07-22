@@ -40,6 +40,7 @@ runs/lightweight/*smoke*/
 Thumbs.db
 
 # Temporary scripts
+.codex_tmp/
 d.py
 d2.py
 debug.py
@@ -51,3 +52,7 @@ tmp_output.txt
 plot_log.txt
 run_plots.bat
 fix_meta.py
+
+# 正式验收日志需要随成果版本化
+!runs/external_test/evaluation.log
+!runs/smoke_test/latest/smoke_test.log

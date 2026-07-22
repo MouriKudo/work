@@ -1,0 +1,112 @@
+{
+  "status": "PASS",
+  "purpose": "engineering_smoke_test_not_scientific_evaluation",
+  "elapsed_seconds": 2.9562,
+  "environment": {
+    "python": "3.10.20 | packaged by conda-forge | (main, Jun 11 2026, 03:28:51) [MSC v.1944 64 bit (AMD64)]",
+    "platform": "Windows-10-10.0.26200-SP0",
+    "torch": "2.11.0+cu130",
+    "cuda_runtime": "13.0",
+    "cuda_available": true,
+    "device": "cuda",
+    "gpu": "NVIDIA GeForce RTX 4060 Laptop GPU"
+  },
+  "inputs": {
+    "metadata": "D:\\luna16-work\\data\\processed\\metadata.csv",
+    "patches": "D:\\luna16-work\\data\\processed\\patches",
+    "mhd": {
+      "path": "D:\\luna16-work\\data\\raw\\subset0\\subset0\\1.3.6.1.4.1.14519.5.2.1.6279.6001.105756658031515062000744821260.mhd",
+      "size_xyz": [
+        512,
+        512,
+        121
+      ],
+      "spacing_xyz": [
+        0.7617189884185791,
+        0.7617189884185791,
+        2.5
+      ],
+      "pixel_id": "16-bit signed integer"
+    },
+    "model_type": "pbip",
+    "checkpoint": "D:\\luna16-work\\runs\\experiments_v2\\seed_1\\pbip_contrast\\best_model.pth",
+    "prototype_bank": "D:\\luna16-work\\runs\\experiments_v2\\seed_1\\prototype_bank\\prototype_bank.pkl"
+  },
+  "sample": {
+    "validation_candidates": 32,
+    "test_candidates": 32,
+    "test_series": 29,
+    "test_class_counts": {
+      "0": 16,
+      "1": 16
+    }
+  },
+  "threshold": 0.20177891850471497,
+  "validation_f1": 0.9696969696969697,
+  "metrics": {
+    "threshold": 0.20177891850471497,
+    "accuracy": 0.9375,
+    "auc": 0.99609375,
+    "average_precision": 0.9963235294117647,
+    "f1": 0.9375,
+    "precision": 0.9375,
+    "recall": 0.9375,
+    "sensitivity": 0.9375,
+    "specificity": 0.9375,
+    "tn": 15,
+    "fp": 1,
+    "fn": 1,
+    "tp": 15,
+    "confusion_matrix": [
+      [
+        15,
+        1
+      ],
+      [
+        1,
+        15
+      ]
+    ]
+  },
+  "bootstrap_iterations": 200,
+  "steps": [
+    {
+      "step": "加载",
+      "status": "PASS",
+      "elapsed_seconds": 0.1104,
+      "detail": "val=32, test=32, mhd_check=True"
+    },
+    {
+      "step": "推理",
+      "status": "PASS",
+      "elapsed_seconds": 1.9504,
+      "detail": "model=pbip, threshold=0.201779, validation_f1=0.9697"
+    },
+    {
+      "step": "评估",
+      "status": "PASS",
+      "elapsed_seconds": 0.0139,
+      "detail": "AUC=0.9961, F1=0.9375, Acc=0.9375"
+    },
+    {
+      "step": "统计",
+      "status": "PASS",
+      "elapsed_seconds": 0.8295,
+      "detail": "CT 簇 Bootstrap=200, confidence=0.95"
+    },
+    {
+      "step": "绘图",
+      "status": "PASS",
+      "elapsed_seconds": 0.0245,
+      "detail": "smoke_dashboard.png, 300 DPI"
+    }
+  ],
+  "outputs": {
+    "selected_samples": "D:\\luna16-work\\runs\\smoke_test\\latest\\selected_samples.csv",
+    "predictions": "D:\\luna16-work\\runs\\smoke_test\\latest\\predictions.csv",
+    "metrics": "D:\\luna16-work\\runs\\smoke_test\\latest\\metrics.csv",
+    "bootstrap_ci": "D:\\luna16-work\\runs\\smoke_test\\latest\\bootstrap_ci.csv",
+    "dashboard": "D:\\luna16-work\\runs\\smoke_test\\latest\\smoke_dashboard.png",
+    "log": "D:\\luna16-work\\runs\\smoke_test\\latest\\smoke_test.log"
+  }
+}

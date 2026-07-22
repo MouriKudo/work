@@ -1,0 +1,14 @@
+metric,value
+threshold,0.20177891850471497
+accuracy,0.9375
+auc,0.99609375
+average_precision,0.9963235294117647
+f1,0.9375
+precision,0.9375
+recall,0.9375
+sensitivity,0.9375
+specificity,0.9375
+tn,15.0
+fp,1.0
+fn,1.0
+tp,15.0

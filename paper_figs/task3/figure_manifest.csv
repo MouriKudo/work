@@ -1,0 +1,17 @@
+figure_key,title,format,dpi,path,source_files
+project_workflow,肺结节候选分类项目整体流程,png,300,D:\luna16-work\paper_figs\task3\project_workflow.png,
+project_workflow,肺结节候选分类项目整体流程,svg,vector,D:\luna16-work\paper_figs\task3\project_workflow.svg,
+pbip_lite_architecture,ResNet18 + PBIP-Lite 模型结构,png,300,D:\luna16-work\paper_figs\task3\pbip_lite_architecture.png,D:\luna16-work\src\pbip_train.py
+pbip_lite_architecture,ResNet18 + PBIP-Lite 模型结构,svg,vector,D:\luna16-work\paper_figs\task3\pbip_lite_architecture.svg,D:\luna16-work\src\pbip_train.py
+main_metrics_comparison,四种方法 AUC/PR-AUC/F1 比较,png,300,D:\luna16-work\paper_figs\task3\main_metrics_comparison.png,D:\luna16-work\runs\summary_v3\main_results_summary.csv
+main_metrics_comparison,四种方法 AUC/PR-AUC/F1 比较,svg,vector,D:\luna16-work\paper_figs\task3\main_metrics_comparison.svg,D:\luna16-work\runs\summary_v3\main_results_summary.csv
+k_ablation_curve,原型库 K 值消融,png,300,D:\luna16-work\paper_figs\task3\k_ablation_curve.png,D:\luna16-work\runs\ablations\k_ablation_results.csv
+k_ablation_curve,原型库 K 值消融,svg,vector,D:\luna16-work\paper_figs\task3\k_ablation_curve.svg,D:\luna16-work\runs\ablations\k_ablation_results.csv
+robustness_auc_by_degradation,六类图像退化 AUC 曲线,png,300,D:\luna16-work\paper_figs\task3\robustness_auc_by_degradation.png,D:\luna16-work\runs\robustness\robustness_detailed.csv
+robustness_auc_by_degradation,六类图像退化 AUC 曲线,svg,vector,D:\luna16-work\paper_figs\task3\robustness_auc_by_degradation.svg,D:\luna16-work\runs\robustness\robustness_detailed.csv
+robustness_f1_by_degradation,六类图像退化 F1 曲线,png,300,D:\luna16-work\paper_figs\task3\robustness_f1_by_degradation.png,D:\luna16-work\runs\robustness\robustness_detailed.csv
+robustness_f1_by_degradation,六类图像退化 F1 曲线,svg,vector,D:\luna16-work\paper_figs\task3\robustness_f1_by_degradation.svg,D:\luna16-work\runs\robustness\robustness_detailed.csv
+gradcam_tp_fp_fn_tn,Grad-CAM TP/FP/FN/TN 对照,png,300,D:\luna16-work\paper_figs\task3\gradcam_tp_fp_fn_tn.png,D:\luna16-work\runs\gradcam\gradcam_samples.csv
+gradcam_tp_fp_fn_tn,Grad-CAM TP/FP/FN/TN 对照,svg,vector,D:\luna16-work\paper_figs\task3\gradcam_tp_fp_fn_tn.svg,D:\luna16-work\runs\gradcam\gradcam_samples.csv
+top3_case_retrieval,Top-3 相似病例检索,png,300,D:\luna16-work\paper_figs\task3\top3_case_retrieval.png,D:\luna16-work\runs\retrieval\retrieval_example.csv
+top3_case_retrieval,Top-3 相似病例检索,svg,vector,D:\luna16-work\paper_figs\task3\top3_case_retrieval.svg,D:\luna16-work\runs\retrieval\retrieval_example.csv

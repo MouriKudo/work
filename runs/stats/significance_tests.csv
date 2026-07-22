@@ -1,0 +1,16 @@
+﻿dataset,method_a,method_b,metric,test,paired,n_a,n_b,statistic,p_value,alpha,significant,note
+luna16_fixed_test,resnet18_augmented,pbip_lite,accuracy,paired_t_test,True,3,3,-0.7559289460184455,0.5285954792089727,0.05,False,n=3，小样本结果需谨慎解释
+luna16_fixed_test,resnet18_augmented,pbip_lite,accuracy,welch_t_test,False,3,3,-0.8834522085987864,0.4400305410148144,0.05,False,n=3，小样本结果需谨慎解释
+luna16_fixed_test,resnet18_augmented,pbip_lite,accuracy,wilcoxon_signed_rank,True,3,3,2.0,0.75,0.05,False,n=3，小样本结果需谨慎解释
+luna16_fixed_test,resnet18_augmented,pbip_lite,precision,paired_t_test,True,3,3,-0.813205200567641,0.5015139488436069,0.05,False,n=3，小样本结果需谨慎解释
+luna16_fixed_test,resnet18_augmented,pbip_lite,precision,welch_t_test,False,3,3,-0.9559869266390851,0.4023226509053392,0.05,False,n=3，小样本结果需谨慎解释
+luna16_fixed_test,resnet18_augmented,pbip_lite,precision,wilcoxon_signed_rank,True,3,3,1.0,0.5,0.05,False,n=3，小样本结果需谨慎解释
+luna16_fixed_test,resnet18_augmented,pbip_lite,recall,paired_t_test,True,3,3,0.5547001962252249,0.6348516283298917,0.05,False,n=3，小样本结果需谨慎解释
+luna16_fixed_test,resnet18_augmented,pbip_lite,recall,welch_t_test,False,3,3,0.7559289460184392,0.49257174172993234,0.05,False,n=3，小样本结果需谨慎解释
+luna16_fixed_test,resnet18_augmented,pbip_lite,recall,wilcoxon_signed_rank,True,3,3,1.0,1.0,0.05,False,n=3，小样本结果需谨慎解释
+luna16_fixed_test,resnet18_augmented,pbip_lite,f1,paired_t_test,True,3,3,-0.7472239724230997,0.53283386316499,0.05,False,n=3，小样本结果需谨慎解释
+luna16_fixed_test,resnet18_augmented,pbip_lite,f1,welch_t_test,False,3,3,-0.8715099037669407,0.44856594113184434,0.05,False,n=3，小样本结果需谨慎解释
+luna16_fixed_test,resnet18_augmented,pbip_lite,f1,wilcoxon_signed_rank,True,3,3,2.0,0.75,0.05,False,n=3，小样本结果需谨慎解释
+luna16_fixed_test,resnet18_augmented,pbip_lite,auc,paired_t_test,True,3,3,1.6936877680598441,0.23240475901177393,0.05,False,n=3，小样本结果需谨慎解释
+luna16_fixed_test,resnet18_augmented,pbip_lite,auc,welch_t_test,False,3,3,1.7376080749101042,0.22343642302113084,0.05,False,n=3，小样本结果需谨慎解释
+luna16_fixed_test,resnet18_augmented,pbip_lite,auc,wilcoxon_signed_rank,True,3,3,1.0,0.5,0.05,False,n=3，小样本结果需谨慎解释
