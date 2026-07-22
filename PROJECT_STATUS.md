@@ -87,8 +87,9 @@
 python -m unittest discover -s tests -v
 ```
 
-当前共19个测试，覆盖数据无泄漏、patch范围、清单状态、原型分类、对比损失、
-余弦聚类、阈值/FROC、退化算子、2D/3D Grad-CAM、检索与 LIDC XML 解析。
+当前共26个测试，覆盖数据无泄漏、patch范围、清单状态、原型分类、对比损失、
+余弦聚类、阈值/FROC、退化算子、2D/3D Grad-CAM、检索，以及 LIDC XML 去重、
+SOP UID 对齐、端到端 patch 提取和下载 ZIP 安全检查。
 
 ## 增量实验阶段
 
@@ -99,9 +100,13 @@ python -m unittest discover -s tests -v
 - [x] Robust-PBIP 20 epoch 训练、最佳权重和干净/退化对比。
 - [x] ResNet18/PBIP Grad-CAM 与 TP/FP/FN/TN 样本图。
 - [x] 训练/测试特征索引与 Top-3 相似病例检索。
-- [x] LIDC-IDRI DICOM/XML 解析、UID 去重和 patch 对齐代码及可行性报告。
-- [ ] LIDC-IDRI 真实数据去重与外部 patch 提取：数据尚未提供，当前状态为
-  `DATA_NOT_PRESENT` / `NOT_RUN`，不得表述为已完成真实外部验证。
+- [x] LIDC-IDRI 官方 XML 全量真实解析与去重：1,319 个 XML、1,294 个唯一
+  SeriesUID、20,096 条医师级结节标注。
+- [x] LIDC-IDRI 真实非重叠样本端到端验证：`LIDC-IDRI-0957` 提取 12 个 patch，
+  12/12 使用 SOP UID 精确对齐，0 失败。
+- [ ] 完整 LIDC-IDRI 外部性能验证：完整 DICOM 约 124–133 GB，尚未全量下载；
+  正式指标还需预先冻结跨医师共识、负候选和匹配协议。此项不属于当前可行性
+  数据处理任务的“代码与真实样本链路完成”结论。
 
 Robust-PBIP 在 Level 3 六类退化宏平均 AUC 上由 0.99380 提升至 0.99552，
 但验证阈值下宏平均 F1 由 0.94116 降至 0.89562。因此只能报告 AUC 鲁棒性改善，

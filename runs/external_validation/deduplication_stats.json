@@ -1,9 +1,16 @@
 {
-  "status": "DATA_NOT_PRESENT",
-  "dicom_series": 0,
-  "xml_files": 0,
-  "reader_nodule_annotations": 0,
+  "status": "SAMPLE_EXTRACTION_COMPLETE",
+  "dicom_series": 1,
+  "xml_files": 1319,
+  "xml_unique_series": 1294,
+  "xml_duplicate_files": 25,
+  "reader_nodule_annotations": 20096,
   "luna_seriesuids": 888,
   "overlap_series": 0,
-  "non_overlap_series": 0
+  "non_overlap_series": 1,
+  "eligible_annotated_series": 1,
+  "extracted_patches": 12,
+  "failed_patches": 0,
+  "sop_aligned_patches": 12,
+  "world_z_fallback_patches": 0
 }

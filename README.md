@@ -197,6 +197,15 @@ python -m unittest discover -s tests -v
 检索。Robust-PBIP 提升了 Level 3 退化宏平均 AUC，但固定验证阈值下 F1 低于
 普通 PBIP，不能表述为所有指标全面提升。
 
-LIDC-IDRI 部分目前完成的是可行性流水线和单元测试；由于
-`data/external/LIDC-IDRI` 尚无真实 DICOM/XML，去重统计为 0、patch 提取状态为
-`NOT_RUN`，不构成真实外部验证结果。
+LIDC-IDRI 可行性流水线已使用真实数据验证：官方 XML-only 包共解析 1,319 个
+XML，按 SeriesInstanceUID 和 correction 优先规则得到 1,294 个唯一 XML series、
+20,096 条医师级结节标注；真实非 LUNA16 重叠病例 `LIDC-IDRI-0957` 成功提取
+12 个 3×64×64 patch，全部按 SOP UID 精确对齐且无失败。下载校验记录见
+`runs/external_validation/source_manifest.csv`。这证明数据处理链路可用，但不等同于
+完整 LIDC-IDRI 外部性能验证；正式 AUC/F1/FROC 仍需完整 DICOM、跨医师共识和
+负候选协议。
+
+数据来源：[TCIA LIDC-IDRI collection](https://www.cancerimagingarchive.net/collection/lidc-idri/)
+（CC BY 3.0）；DICOM sample 通过官方
+[NBIA Search REST API](https://wiki.cancerimagingarchive.net/display/Public/NBIA+Search+REST+API+Guide)
+获取。

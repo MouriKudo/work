@@ -105,24 +105,42 @@ K=1/3/5 与其他消融共用下一节的批处理；训练完成后解析脚本
 
 ## 8. LIDC-IDRI 外部验证
 
-先扫描并生成可行性/去重记录：
+下载官方 XML-only 包并生成校验清单：
 
 ```powershell
-& $py src/lidc_external.py --lidc-root data/external/LIDC-IDRI
+& $py src/download_lidc_sample.py --download-xml
 ```
 
-下载好 DICOM/XML 且检查清单后，才实际提取 patch：
+先解析 XML，生成可用于筛选真实 sample series 的标注清单：
 
 ```powershell
-& $py src/lidc_external.py --lidc-root data/external/LIDC-IDRI --extract
+& $py src/lidc_external.py `
+  --lidc-root data/external/LIDC-IDRI `
+  --xml-root data/external/LIDC-IDRI/xml `
+  --dicom-root data/external/LIDC-IDRI/dicom
+```
+
+从 TCIA 官方 NBIA API 自动选择并下载体积最小的带标注、非 LUNA16 重叠 CT
+series，然后执行真实 patch 提取：
+
+```powershell
+& $py src/download_lidc_sample.py --download-sample
+& $py src/lidc_external.py `
+  --lidc-root data/external/LIDC-IDRI `
+  --xml-root data/external/LIDC-IDRI/xml `
+  --dicom-root data/external/LIDC-IDRI/dicom `
+  --extract
 ```
 
 输出位于 `runs/external_validation/`，包括可行性报告、DICOM/XML 清单、UID 精确
-重叠统计、非重叠病例和处理日志；patch 位于
+重叠统计、下载 MD5 清单、非重叠病例和处理日志；patch 位于
 `data/processed/lidc_external_patches/`。
 
-注意：LIDC XML 直接给出的是结节标注。正式外部 AUC/F1/FROC 还需要冻结阅片
-医师共识标签、负候选生成和匹配协议，不能只用阳性 patch 宣称完成外部性能验证。
+当前真实 smoke series 为 `LIDC-IDRI-0957`，12 个 patch 全部使用 XML
+`imageSOP_UID` 精确映射 DICOM 切片。完整 DICOM 约 124–133 GB，应在容量充足的
+磁盘使用 TCIA Data Retriever 下载。LIDC XML 直接给出的是医师级结节标注；正式
+外部 AUC/F1/FROC 还需要冻结阅片医师共识标签、负候选生成和匹配协议，不能只用
+阳性 patch 宣称完成外部性能验证。
 
 ## 验证
 
