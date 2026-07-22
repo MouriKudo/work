@@ -192,3 +192,11 @@ python -m unittest discover -s tests -v
 新增任务的完整运行顺序、配置入口和产物位置见
 [`INCREMENTAL_TASKS.md`](INCREMENTAL_TASKS.md)。所有新增实验都由 argparse 或
 `src/configs/*.yaml` 驱动，表格写入 `runs/`，论文图写入 `paper_figs/`。
+
+增量实验已完成消融、六类五档退化评估、Robust-PBIP、Grad-CAM 和 Top-3
+检索。Robust-PBIP 提升了 Level 3 退化宏平均 AUC，但固定验证阈值下 F1 低于
+普通 PBIP，不能表述为所有指标全面提升。
+
+LIDC-IDRI 部分目前完成的是可行性流水线和单元测试；由于
+`data/external/LIDC-IDRI` 尚无真实 DICOM/XML，去重统计为 0、patch 提取状态为
+`NOT_RUN`，不构成真实外部验证结果。
